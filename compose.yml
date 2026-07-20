@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["db", "full"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dho}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dho_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-dho_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dho}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Isolated, disposable database for the backend integration test suite.
+  # Never shares data or a volume with the `postgres` dev/full service.
+  postgres-test:
+    image: postgres:16-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dho}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dho_dev_password}
+      POSTGRES_DB: ${POSTGRES_TEST_DB:-dho_test}
+    ports:
+      - "${POSTGRES_TEST_PORT:-5433}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dho}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - apps/api/.env
+    environment:
+      # Overrides the .env value so the container reaches Postgres over the
+      # Compose network instead of localhost.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dho}:${POSTGRES_PASSWORD:-dho_dev_password}@postgres:5432/${POSTGRES_DB:-dho_dev}
+    ports:
+      - "${API_PORT:-4000}:4000"
+    volumes:
+      - uploads-data:/repo/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_ORIGIN: ${NEXT_PUBLIC_API_ORIGIN:-http://localhost:4000}
+        NEXT_PUBLIC_WS_ORIGIN: ${NEXT_PUBLIC_WS_ORIGIN:-ws://localhost:4000}
+    env_file:
+      - apps/web/.env
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  uploads-data:

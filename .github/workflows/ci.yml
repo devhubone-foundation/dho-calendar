@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.15.1"
+
+jobs:
+  checks:
+    name: Install, lint, typecheck, unit test, build
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://dho:dho_dev_password@localhost:5432/dho_dev
+      JWT_ACCESS_SECRET: ci-only-access-secret-not-for-real-use
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-real-use
+      ACCESS_TOKEN_TTL: 15m
+      REFRESH_TOKEN_TTL: 30d
+      APP_ORIGIN: http://localhost:3000
+      API_ORIGIN: http://localhost:4000
+      NEXT_PUBLIC_API_ORIGIN: http://localhost:4000
+      NEXT_PUBLIC_WS_ORIGIN: ws://localhost:4000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  integration:
+    name: Postgres integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dho
+          POSTGRES_PASSWORD: dho_test_password
+          POSTGRES_DB: dho_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U dho"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://dho:dho_test_password@localhost:5432/dho_test
+      JWT_ACCESS_SECRET: ci-only-access-secret-not-for-real-use
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-real-use
+      ACCESS_TOKEN_TTL: 15m
+      REFRESH_TOKEN_TTL: 30d
+      APP_ORIGIN: http://localhost:3000
+      API_ORIGIN: http://localhost:4000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace dependencies (generates Prisma client too)
+        run: pnpm --filter @dho/config --filter @dho/contracts --filter @dho/database build
+
+      - name: Apply committed migrations
+        run: pnpm --filter @dho/database prisma:migrate:deploy
+
+      - name: Run backend integration tests
+        run: pnpm --filter @dho/api test:integration
