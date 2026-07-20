@@ -1,0 +1,11 @@
+{
+  "extends": "@dho/typescript-config/nestjs.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "rootDir": "src",
+    "outDir": "dist",
+    "incremental": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "test"]
+}

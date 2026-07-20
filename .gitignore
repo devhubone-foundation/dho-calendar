@@ -33,3 +33,15 @@ uploads/
 
 # Prisma
 apps/api/prisma/dev.db
+packages/database/prisma/dev.db
+packages/database/generated/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Turbo
+.turbo/
+
+# Test artifacts
+apps/api/test/tmp/
+

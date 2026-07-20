@@ -1,0 +1,22 @@
+{
+  "name": "@dho/eslint-config",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "files": [
+    "base.js",
+    "nestjs.js",
+    "nextjs.js"
+  ],
+  "dependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.17.0",
+    "@next/eslint-plugin-next": "^15.1.3",
+    "eslint-config-next": "^15.1.3",
+    "globals": "^15.14.0",
+    "typescript-eslint": "^8.19.1"
+  },
+  "peerDependencies": {
+    "eslint": "^9.17.0"
+  }
+}
