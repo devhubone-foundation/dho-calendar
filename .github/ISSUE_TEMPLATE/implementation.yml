@@ -1,0 +1,64 @@
+name: Implementation issue
+description: Large vertical implementation issue for a Claude Code agent
+title: "[Implementation] "
+labels:
+  - implementation
+body:
+  - type: markdown
+    attributes:
+      value: "Use this template for planner-generated implementation issues."
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome and programmer context
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and exclusions
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies, ordering, and parallel work
+    validations:
+      required: true
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Expected ownership and conflict risks
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Implementation requirements
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: automated-tests
+    attributes:
+      label: Automated testing requirements
+    validations:
+      required: true
+  - type: textarea
+    id: manual-tests
+    attributes:
+      label: Manual testing scenario
+    validations:
+      required: true
+  - type: textarea
+    id: handoff
+    attributes:
+      label: Ready-to-copy Sonnet handoff prompt
+    validations:
+      required: true

@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+.next/
+dist/
+build/
+coverage/
+.turbo/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Database and Docker data
+data/
+postgres-data/
+
+# Uploaded files
+uploads/
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Prisma
+apps/api/prisma/dev.db
