@@ -90,8 +90,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build database package (generates Prisma client)
-        run: pnpm --filter @dho/database build
+      - name: Build workspace dependencies (generates Prisma client too)
+        run: pnpm --filter @dho/config --filter @dho/contracts --filter @dho/database build
 
       - name: Apply committed migrations
         run: pnpm --filter @dho/database prisma:migrate:deploy
