@@ -1,0 +1,227 @@
+/**
+ * Shared component styles built on top of tokens.css.
+ * Class names are prefixed "dho-" and are hand-scoped (no CSS Modules) so
+ * this stylesheet can be imported once by the consuming app.
+ */
+
+/* Button — reproduces DevHubOne's real outlined-pill CTA (see TOKENS.md) */
+.dho-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dho-space-2);
+  font-family: var(--dho-font-body);
+  font-weight: 700;
+  border-radius: var(--dho-radius-pill);
+  padding: var(--dho-space-2) var(--dho-space-8);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    background-color 0.2s ease;
+  border: 4px solid var(--dho-color-ink);
+  background: transparent;
+  color: var(--dho-color-ink);
+}
+.dho-button:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+.dho-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.dho-button--secondary {
+  border-color: var(--dho-color-navy);
+  color: var(--dho-color-navy);
+}
+.dho-button--danger {
+  border-color: var(--dho-color-danger);
+  color: var(--dho-color-danger);
+}
+.dho-button--small {
+  padding: var(--dho-space-1) var(--dho-space-4);
+}
+
+/* Card */
+.dho-card {
+  border-radius: var(--dho-radius-sm);
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(34, 47, 69, 0.12);
+  padding: var(--dho-space-6);
+}
+.dho-card--accent {
+  background: var(--dho-color-sage);
+}
+
+/* Form field / input — reproduces DevHubOne's real input treatment */
+.dho-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-1);
+  font-family: var(--dho-font-body);
+}
+.dho-field label {
+  font-weight: 600;
+  color: var(--dho-color-ink);
+}
+.dho-input {
+  border: 2px solid var(--dho-color-ink);
+  background: var(--dho-color-paper);
+  border-radius: var(--dho-radius-sm);
+  padding: var(--dho-space-2);
+  font-family: var(--dho-font-body);
+  font-size: 1rem;
+  color: var(--dho-color-ink);
+  width: 100%;
+}
+.dho-input:focus {
+  outline: 2px solid var(--dho-color-navy);
+  outline-offset: 1px;
+}
+.dho-input[aria-invalid="true"] {
+  border-color: var(--dho-color-danger);
+}
+.dho-field-error {
+  color: var(--dho-color-danger);
+  font-size: 0.875rem;
+}
+
+/* Modal */
+.dho-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(34, 47, 69, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--dho-space-4);
+  z-index: 50;
+}
+.dho-modal {
+  background: #fff;
+  border-radius: var(--dho-radius-md);
+  padding: var(--dho-space-6);
+  max-width: 32rem;
+  width: 100%;
+  max-height: calc(100vh - 2 * var(--dho-space-8));
+  overflow-y: auto;
+}
+
+/* Avatar */
+.dho-avatar {
+  border-radius: var(--dho-radius-pill);
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--dho-font-body);
+  font-weight: 700;
+  color: var(--dho-color-paper);
+  flex-shrink: 0;
+}
+
+/* Language switch */
+.dho-language-switch {
+  display: inline-flex;
+  gap: var(--dho-space-2);
+}
+.dho-language-switch a {
+  font-family: var(--dho-font-body);
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: var(--dho-space-1) var(--dho-space-3);
+  border-radius: var(--dho-radius-pill);
+  color: inherit;
+  text-decoration: none;
+}
+.dho-language-switch a[aria-current="true"] {
+  background: var(--dho-color-navy);
+  color: var(--dho-color-paper);
+}
+.dho-language-switch a:hover {
+  text-decoration: underline;
+}
+
+/* Badge */
+.dho-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--dho-font-body);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.125rem var(--dho-space-3);
+  border-radius: var(--dho-radius-pill);
+  background: var(--dho-color-paper);
+  color: var(--dho-color-ink);
+  border: 1px solid var(--dho-color-ink);
+}
+.dho-badge--success {
+  background: var(--dho-color-leaf);
+  color: #fff;
+  border-color: transparent;
+}
+.dho-badge--muted {
+  background: transparent;
+  color: var(--dho-color-navy);
+  border-color: var(--dho-color-navy);
+}
+.dho-badge--danger {
+  background: var(--dho-color-danger-bg);
+  color: var(--dho-color-danger);
+  border-color: var(--dho-color-danger);
+}
+
+/* Authenticated app shell */
+.dho-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.dho-shell-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-6);
+  flex-wrap: wrap;
+  background: var(--dho-color-navy);
+  color: var(--dho-color-paper);
+  padding: var(--dho-space-4) var(--dho-space-6);
+}
+.dho-shell-brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+.dho-shell-nav {
+  display: flex;
+  gap: var(--dho-space-4);
+  flex: 1;
+  flex-wrap: wrap;
+}
+.dho-shell-nav a {
+  color: var(--dho-color-paper);
+  text-decoration: none;
+  font-weight: 600;
+  padding: var(--dho-space-1) var(--dho-space-2);
+  border-radius: var(--dho-radius-sm);
+}
+.dho-shell-nav a[aria-current="page"] {
+  background: rgba(239, 244, 239, 0.2);
+}
+.dho-shell-nav a:hover {
+  text-decoration: underline;
+}
+.dho-shell-user {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-3);
+}
+.dho-shell-user .dho-button {
+  border-color: var(--dho-color-paper);
+  color: var(--dho-color-paper);
+}
+.dho-shell-main {
+  flex: 1;
+  padding: var(--dho-space-8) var(--dho-space-6);
+  max-width: 60rem;
+  width: 100%;
+  margin: 0 auto;
+}

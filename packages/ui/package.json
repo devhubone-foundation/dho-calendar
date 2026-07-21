@@ -10,20 +10,28 @@
       "types": "./dist/index.d.ts",
       "require": "./dist/index.js",
       "default": "./dist/index.js"
-    }
+    },
+    "./tokens.css": "./src/styles/tokens.css",
+    "./components.css": "./src/styles/components.css"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "test": "echo 'no tests yet: packages/ui is an empty shell pending Issue #2 design tokens' && exit 0",
+    "test": "vitest run",
     "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@dho/eslint-config": "workspace:*",
     "@dho/typescript-config": "workspace:*",
     "@types/node": "^22.10.5",
+    "@types/react": "^19.0.2",
     "eslint": "^9.17.0",
-    "typescript": "^5.7.2"
+    "react": "^19.0.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   }
 }

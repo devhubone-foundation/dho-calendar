@@ -1,5 +1,8 @@
+import "@dho/ui/tokens.css";
+import "@dho/ui/components.css";
+
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import { AuthProvider } from "../lib/auth/auth-context";
 
@@ -12,7 +15,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        {/* Suspense boundary required by Next.js for pages using
+            useSearchParams() (our per-visit ?lang= handling). */}
+        <Suspense fallback={null}>
+          <AuthProvider>{children}</AuthProvider>
+        </Suspense>
       </body>
     </html>
   );
