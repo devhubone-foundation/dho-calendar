@@ -3,6 +3,7 @@ import type { MemberSummary, ProfilePictureUploadResponse, SelfProfileUpdateRequ
 
 import { AuditService } from "../audit/audit.service";
 import { throwIfUniqueEmailViolation, toMemberSummary } from "../common/member-summary.util";
+import { DomainEventsService } from "../common/domain-events/domain-events.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfilePictureStorageService } from "../uploads/profile-picture-storage.service";
 import { UploadValidationService, type UploadedFileLike } from "../uploads/upload-validation.service";
@@ -14,6 +15,7 @@ export class ProfilesService {
     private readonly uploadValidation: UploadValidationService,
     private readonly storage: ProfilePictureStorageService,
     private readonly audit: AuditService,
+    private readonly domainEvents: DomainEventsService,
   ) {}
 
   async getOwnProfile(userId: string): Promise<MemberSummary> {
@@ -47,6 +49,7 @@ export class ProfilesService {
         targetId: userId,
         metadata: { fullName: data.fullName, email: data.email },
       });
+      this.domainEvents.emit("profile.changed", { userId });
       return toMemberSummary(user, profile);
     } catch (error) {
       throwIfUniqueEmailViolation(error);
@@ -92,6 +95,7 @@ export class ProfilesService {
       targetType: "User",
       targetId: userId,
     });
+    this.domainEvents.emit("profile.changed", { userId });
 
     return { profileImagePath: updatedProfile.profileImagePath as string };
   }

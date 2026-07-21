@@ -18,6 +18,7 @@ const en = {
     attendance: "My attendance",
     events: "Events",
     calendar: "Calendar",
+    audit: "Audit history",
   },
   weekdays: {
     MONDAY: "Monday",
@@ -35,8 +36,7 @@ const en = {
   },
   publicPage: {
     title: "DevHubOne Office Calendar",
-    subtitle:
-      "This is a platform-foundation placeholder. The public calendar (office hours, attendance, events) ships in later issues.",
+    subtitle: "See when the office is open, who's expected, and upcoming public events.",
   },
   auth: {
     login: {
@@ -236,9 +236,26 @@ const en = {
     noEventsOnDay: "No events on this date.",
     officeOpen: "Office open",
     officeClosed: "Office closed",
+    officeHoursChanged: "Hours changed for this date",
+    confirmedAttendees: "Confirmed attendees",
+    uncertainAttendees: "Uncertain attendees",
+    noConfirmedAttendees: "No confirmed attendees yet.",
+    contactLabel: "Contact",
     dayModalTitle: "Events on {date}",
     allDay: "All day",
     genericLoadError: "Could not load the calendar",
+  },
+  audit: {
+    title: "Audit history",
+    subtitle: "The last 7 days of administrative actions. Older entries are removed automatically.",
+    action: "Action",
+    actor: "Actor",
+    target: "Target",
+    when: "When",
+    details: "Details",
+    noEntries: "No audited actions in the last 7 days.",
+    genericLoadError: "Could not load the audit history",
+    systemActor: "System",
   },
 };
 

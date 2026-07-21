@@ -2,7 +2,7 @@
 
 import { Button, Card } from "@dho/ui";
 import type { EventOccurrence } from "@dho/contracts";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { getOfficeEffectiveRange, listEvents } from "../../../../lib/auth/api-client";
 import { useAuth } from "../../../../lib/auth/auth-context";
@@ -17,6 +17,7 @@ import {
 } from "../../../../lib/calendar-grid";
 import { formatEventDate, formatMonthLabel } from "../../../../lib/event-format";
 import { useDictionary, useLocale } from "../../../../lib/i18n/use-locale";
+import { useRealtimeInvalidation } from "../../../../lib/realtime/socket-client";
 import { DayDetailsModal } from "../../../../components/calendar/DayDetailsModal";
 import { DayView } from "../../../../components/calendar/DayView";
 import { MonthView } from "../../../../components/calendar/MonthView";
@@ -52,6 +53,10 @@ export default function CalendarPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  const handleInvalidate = useCallback(() => setRefreshTick((tick) => tick + 1), []);
+  useRealtimeInvalidation(handleInvalidate);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -76,7 +81,7 @@ export default function CalendarPage() {
       setOfficeOpenDates(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, view, anchorDate]);
+  }, [accessToken, view, anchorDate, refreshTick]);
 
   function openDayModal(dateKey: string): void {
     setSelectedDate(dateKey);

@@ -217,6 +217,53 @@
   font-size: 1.75rem;
 }
 
+/* Public day-details modal: office state + confirmed/uncertain attendees. */
+.dho-cal-day-office {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-3);
+  margin-bottom: var(--dho-space-4);
+  padding-bottom: var(--dho-space-4);
+  border-bottom: 1px solid var(--dho-color-sage);
+}
+.dho-cal-day-office-state {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  font-weight: 600;
+  color: var(--dho-color-navy);
+}
+.dho-cal-attendee-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+}
+.dho-cal-attendee-group h4 {
+  margin: 0;
+}
+.dho-cal-attendee {
+  display: flex;
+  gap: var(--dho-space-3);
+  align-items: flex-start;
+}
+.dho-cal-attendee-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-1);
+}
+.dho-cal-attendee-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  flex-wrap: wrap;
+}
+.dho-cal-attendee-meta {
+  color: var(--dho-color-navy);
+}
+.dho-cal-attendee-contact {
+  font-size: 0.875rem;
+}
+
 @media (max-width: 40rem) {
   .dho-cal-month-grid,
   .dho-cal-week-grid {

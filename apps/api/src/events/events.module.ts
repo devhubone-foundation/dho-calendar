@@ -9,5 +9,6 @@ import { EventsService } from "./events.service";
   imports: [AuditModule, UploadsModule],
   controllers: [EventsController],
   providers: [EventsService],
+  exports: [EventsService],
 })
 export class EventsModule {}

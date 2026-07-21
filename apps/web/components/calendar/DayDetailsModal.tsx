@@ -1,13 +1,20 @@
 "use client";
 
 import { Modal } from "@dho/ui";
-import type { EventOccurrence } from "@dho/contracts";
+import type { EventOccurrence, PublicMemberAttendance, PublicOfficeState } from "@dho/contracts";
 
 import { groupOccurrencesByDate } from "../../lib/calendar-grid";
 import { formatEventDate } from "../../lib/event-format";
 import type { Locale } from "../../lib/i18n/locale";
 import { useDictionary } from "../../lib/i18n/use-locale";
 import { EventCard } from "./EventCard";
+import { PublicDayAttendance } from "./PublicDayAttendance";
+
+export interface PublicDayInfo {
+  office: PublicOfficeState;
+  confirmedAttendees: PublicMemberAttendance[];
+  uncertainAttendees: PublicMemberAttendance[];
+}
 
 export interface DayDetailsModalProps {
   open: boolean;
@@ -15,6 +22,10 @@ export interface DayDetailsModalProps {
   occurrences: EventOccurrence[];
   locale: Locale;
   onClose: () => void;
+  /** Present only on the public page (Issue #5) — office/attendee context
+   * rendered above the events list. Omitted by every authenticated-calendar
+   * caller, which is unaffected by this addition. */
+  publicDayInfo?: PublicDayInfo;
 }
 
 /**
@@ -23,7 +34,14 @@ export interface DayDetailsModalProps {
  * focus on open, backdrop click) for keyboard accessibility and iframe-safe
  * rendering (PRODUCT_BLUEPRINT.md §16).
  */
-export function DayDetailsModal({ open, dateKey, occurrences, locale, onClose }: DayDetailsModalProps) {
+export function DayDetailsModal({
+  open,
+  dateKey,
+  occurrences,
+  locale,
+  onClose,
+  publicDayInfo,
+}: DayDetailsModalProps) {
   const dictionary = useDictionary();
 
   if (!dateKey) {
@@ -40,6 +58,15 @@ export function DayDetailsModal({ open, dateKey, occurrences, locale, onClose }:
       onClose={onClose}
       title={dictionary.calendar.dayModalTitle.replace("{date}", formatEventDate(dateKey, locale))}
     >
+      {publicDayInfo ? (
+        <PublicDayAttendance
+          office={publicDayInfo.office}
+          confirmedAttendees={publicDayInfo.confirmedAttendees}
+          uncertainAttendees={publicDayInfo.uncertainAttendees}
+          locale={locale}
+        />
+      ) : null}
+
       {dayOccurrences.length === 0 ? (
         <p className="dho-cal-empty">{dictionary.calendar.noEventsOnDay}</p>
       ) : (
