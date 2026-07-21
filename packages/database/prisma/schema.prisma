@@ -176,3 +176,80 @@ model AttendanceException {
   @@unique([userId, date])
   @@map("attendance_exceptions")
 }
+
+enum EventRecurrenceFrequency {
+  NONE
+  WEEKLY
+}
+
+enum EventRecurrenceEndType {
+  COUNT
+  UNTIL
+}
+
+// A public event definition (PRODUCT_BLUEPRINT.md §14). A non-recurring event
+// has frequency=NONE and expands to exactly one occurrence at startAt/endAt.
+// A recurring event repeats weekly on `byWeekdays`, ending by either a fixed
+// occurrence COUNT or an UNTIL date. `endsBeforeDate` is a hard cap set only
+// by a "this and future" edit/delete split (see EventRecurrenceException doc
+// comment) — it is not part of the user-facing recurrence definition and
+// exists purely to stop this series' occurrences before the split point while
+// leaving the original COUNT/UNTIL untouched for historical clarity.
+// `splitFromSeriesId` records lineage for a series created by such a split;
+// it is a plain reference (no FK) used only for audit/debugging.
+model EventSeries {
+  id                String                    @id @default(cuid())
+  titleBg           String
+  titleEn           String
+  descriptionBg     String
+  descriptionEn     String
+  startAt           DateTime
+  endAt             DateTime
+  isAllDay          Boolean
+  location          String
+  coverImagePath    String?
+  frequency         EventRecurrenceFrequency  @default(NONE)
+  byWeekdays        Weekday[]
+  recurrenceEndType EventRecurrenceEndType?
+  recurrenceCount   Int?
+  recurrenceUntil   DateTime?                 @db.Date
+  endsBeforeDate    DateTime?                 @db.Date
+  splitFromSeriesId String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  exceptions EventRecurrenceException[]
+
+  @@index([startAt])
+  @@map("event_series")
+}
+
+// An override for one originally-scheduled occurrence of a recurring series
+// (PRODUCT_BLUEPRINT.md §14.8, "this occurrence" scope). `occurrenceDate` is
+// the occurrence's original scheduled calendar date (before any override) and
+// is the stable key clients use to address it. `isCancelled` represents a
+// "this occurrence" delete; otherwise every content field is populated
+// together (a full snapshot of the edited occurrence, not a partial patch) —
+// the cover image is intentionally excluded and always inherited from the
+// parent series.
+model EventRecurrenceException {
+  id             String    @id @default(cuid())
+  seriesId       String
+  occurrenceDate DateTime  @db.Date
+  isCancelled    Boolean   @default(false)
+  titleBg        String?
+  titleEn        String?
+  descriptionBg  String?
+  descriptionEn  String?
+  startAt        DateTime?
+  endAt          DateTime?
+  isAllDay       Boolean?
+  location       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  series EventSeries @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@unique([seriesId, occurrenceDate])
+  @@map("event_recurrence_exceptions")
+}

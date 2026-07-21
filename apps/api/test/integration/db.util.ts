@@ -3,6 +3,8 @@ import { PrismaClient } from "@dho/database";
 import type { UserRole } from "@dho/contracts";
 
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
+  await prisma.eventRecurrenceException.deleteMany();
+  await prisma.eventSeries.deleteMany();
   await prisma.attendanceException.deleteMany();
   await prisma.memberWeeklySchedule.deleteMany();
   await prisma.officeScheduleException.deleteMany();

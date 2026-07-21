@@ -7,6 +7,7 @@ import { AuthModule } from "./auth/auth.module";
 import { JwtAccessGuard } from "./common/guards/jwt-access.guard";
 import { DomainEventsModule } from "./common/domain-events/domain-events.module";
 import { ConfigModule } from "./config/config.module";
+import { EventsModule } from "./events/events.module";
 import { HealthModule } from "./health/health.module";
 import { OfficeScheduleModule } from "./office-schedule/office-schedule.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -27,6 +28,7 @@ import { UsersModule } from "./users/users.module";
     UsersModule,
     OfficeScheduleModule,
     AttendanceModule,
+    EventsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: JwtAccessGuard }],
 })

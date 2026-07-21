@@ -6,8 +6,14 @@ import type {
   AttendanceExceptionListResponse,
   AttendanceWarningListResponse,
   ChangePasswordRequest,
+  CreateEventRequest,
   DateRangeQuery,
+  DeleteEventOccurrenceRequest,
+  DeleteEventSeriesScopeRequest,
   ErrorResponse,
+  EventCoverUploadResponse,
+  EventOccurrenceListResponse,
+  EventSeriesDetail,
   LoginRequest,
   LoginResponse,
   MemberEffectiveAttendanceRangeResponse,
@@ -24,6 +30,9 @@ import type {
   ProfilePictureUploadResponse,
   RefreshResponse,
   SelfProfileUpdateRequest,
+  UpdateEventOccurrenceRequest,
+  UpdateEventSeriesFromOccurrenceRequest,
+  UpdateEventSeriesRequest,
   UpdateOfficeDefaultsRequest,
   UpdateWeeklyScheduleRequest,
 } from "@dho/contracts";
@@ -356,6 +365,123 @@ export function getMemberEffectiveAttendance(
 
 export function getAttendanceWarnings(accessToken: string): Promise<AttendanceWarningListResponse> {
   return apiFetch<AttendanceWarningListResponse>("/api/attendance/warnings", {
+    headers: authHeaders(accessToken),
+  });
+}
+
+// --- Events (collaborative: any active member/admin creates/edits/deletes any event) ---
+
+export function listEvents(range: DateRangeQuery, accessToken: string): Promise<EventOccurrenceListResponse> {
+  return apiFetch<EventOccurrenceListResponse>(`/api/events${rangeQuery(range)}`, {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function getEvent(seriesId: string, accessToken: string): Promise<EventSeriesDetail> {
+  return apiFetch<EventSeriesDetail>(`/api/events/${seriesId}`, { headers: authHeaders(accessToken) });
+}
+
+export function createEvent(payload: CreateEventRequest, accessToken: string): Promise<EventSeriesDetail> {
+  return apiFetch<EventSeriesDetail>("/api/events", {
+    method: "POST",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateEventSeries(
+  seriesId: string,
+  payload: UpdateEventSeriesRequest,
+  accessToken: string,
+): Promise<EventSeriesDetail> {
+  return apiFetch<EventSeriesDetail>(`/api/events/${seriesId}`, {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteEventSeries(
+  seriesId: string,
+  payload: DeleteEventSeriesScopeRequest,
+  accessToken: string,
+): Promise<void> {
+  return apiFetch<void>(`/api/events/${seriesId}`, {
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateEventOccurrence(
+  seriesId: string,
+  date: string,
+  payload: UpdateEventOccurrenceRequest,
+  accessToken: string,
+): Promise<void> {
+  return apiFetch<void>(`/api/events/${seriesId}/occurrences/${date}`, {
+    method: "PUT",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteEventOccurrence(
+  seriesId: string,
+  date: string,
+  payload: DeleteEventOccurrenceRequest,
+  accessToken: string,
+): Promise<void> {
+  return apiFetch<void>(`/api/events/${seriesId}/occurrences/${date}`, {
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateEventSeriesFromOccurrence(
+  seriesId: string,
+  date: string,
+  payload: UpdateEventSeriesFromOccurrenceRequest,
+  accessToken: string,
+): Promise<EventSeriesDetail> {
+  return apiFetch<EventSeriesDetail>(`/api/events/${seriesId}/occurrences/${date}/future`, {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteEventSeriesFromOccurrence(
+  seriesId: string,
+  date: string,
+  payload: DeleteEventSeriesScopeRequest,
+  accessToken: string,
+): Promise<void> {
+  return apiFetch<void>(`/api/events/${seriesId}/occurrences/${date}/future`, {
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function uploadEventCover(
+  seriesId: string,
+  file: File,
+  accessToken: string,
+): Promise<EventCoverUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<EventCoverUploadResponse>(`/api/events/${seriesId}/cover`, {
+    method: "POST",
+    headers: authHeaders(accessToken),
+    body: formData,
+  });
+}
+
+export function removeEventCover(seriesId: string, accessToken: string): Promise<void> {
+  return apiFetch<void>(`/api/events/${seriesId}/cover`, {
+    method: "DELETE",
     headers: authHeaders(accessToken),
   });
 }

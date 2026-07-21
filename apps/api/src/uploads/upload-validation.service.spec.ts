@@ -84,4 +84,67 @@ describe("UploadValidationService", () => {
       }),
     ).rejects.toBeInstanceOf(AppError);
   });
+
+  describe("validateAndNormalizeEventCover", () => {
+    it("accepts a valid PNG and normalizes it to WebP", async () => {
+      const buffer = await makeImage("png");
+      const result = await service.validateAndNormalizeEventCover({
+        buffer,
+        size: buffer.length,
+        mimetype: "image/png",
+      });
+      expect(result.extension).toBe("webp");
+    });
+
+    it("preserves aspect ratio for a wide image instead of cropping to a square", async () => {
+      const wide = sharp({
+        create: { width: 2400, height: 800, channels: 3, background: { r: 10, g: 20, b: 30 } },
+      });
+      const buffer = await wide.png().toBuffer();
+      const result = await service.validateAndNormalizeEventCover({
+        buffer,
+        size: buffer.length,
+        mimetype: "image/png",
+      });
+      const metadata = await sharp(result.buffer).metadata();
+      expect(metadata.width).toBeLessThanOrEqual(1920);
+      expect(metadata.height).toBeLessThanOrEqual(1920);
+      // 2400x800 downscaled within 1920x1920 preserving aspect ratio -> 1920x640.
+      expect(metadata.width).toBe(1920);
+      expect(metadata.height).toBe(640);
+    });
+
+    it("rejects a file over the 10 MB limit", async () => {
+      const buffer = await makeImage("png");
+      await expect(
+        service.validateAndNormalizeEventCover({
+          buffer,
+          size: 11 * 1024 * 1024,
+          mimetype: "image/png",
+        }),
+      ).rejects.toBeInstanceOf(AppError);
+    });
+
+    it("accepts a file up to (but not over) the profile-picture limit, since its own limit is larger", async () => {
+      const buffer = await makeImage("png");
+      await expect(
+        service.validateAndNormalizeEventCover({
+          buffer,
+          size: 6 * 1024 * 1024,
+          mimetype: "image/png",
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it("rejects a non-image file that spoofs an allowed MIME type", async () => {
+      const buffer = Buffer.from("this is not an image, just plain text pretending to be one");
+      await expect(
+        service.validateAndNormalizeEventCover({
+          buffer,
+          size: buffer.length,
+          mimetype: "image/png",
+        }),
+      ).rejects.toBeInstanceOf(AppError);
+    });
+  });
 });
