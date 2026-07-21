@@ -60,12 +60,20 @@ docker compose --profile full up --build
 
 Runs an isolated, disposable Postgres for the backend integration suite.
 
+The integration suite runs the Nest app directly (it does not load any `.env`
+file), so every required `@dho/config` variable must be exported in the shell
+— not just `DATABASE_URL`:
+
 ```bash
 docker compose --profile test up -d
-DATABASE_URL=postgresql://dho:dho_dev_password@localhost:5433/dho_test \
-  pnpm --filter @dho/database prisma:migrate:deploy
-DATABASE_URL=postgresql://dho:dho_dev_password@localhost:5433/dho_test \
-  pnpm --filter @dho/api test:integration
+export DATABASE_URL=postgresql://dho:dho_dev_password@localhost:5433/dho_test
+export JWT_ACCESS_SECRET=test-only-access-secret-not-for-real-use
+export JWT_REFRESH_SECRET=test-only-refresh-secret-not-for-real-use
+export APP_ORIGIN=http://localhost:3000
+export API_ORIGIN=http://localhost:4000
+
+pnpm --filter @dho/database prisma:migrate:deploy
+pnpm --filter @dho/api test:integration
 ```
 
 ## Common commands
