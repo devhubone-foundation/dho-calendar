@@ -1,5 +1,6 @@
 import "@dho/ui/tokens.css";
 import "@dho/ui/components.css";
+import "../styles/calendar.css";
 
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";

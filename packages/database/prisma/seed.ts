@@ -247,6 +247,74 @@ async function main() {
   await upsertOfficeException(changedHoursMonday, true, "10:00", "18:00");
   await upsertOfficeException(closedWednesday, false, null, null);
 
+  // Issue #4 events: one-time (timed), all-day, multi-day, and recurring
+  // examples (docs/TESTING_STRATEGY.md seed scenario). Only seed once, same
+  // re-run-safety rule as the office defaults above.
+  const eventsHorizonBase = addDaysIso(today, 10);
+  const openDayDate = nextWeekdayOnOrAfter(eventsHorizonBase, 5);
+  const teamBuildingDate = addDaysIso(openDayDate, 7);
+  const gameJamStart = addDaysIso(teamBuildingDate, 7);
+  const gameJamEnd = addDaysIso(gameJamStart, 2);
+  const workshopSeriesStart = nextWeekdayOnOrAfter(eventsHorizonBase, 3);
+
+  if ((await prisma.eventSeries.count()) === 0) {
+    await prisma.eventSeries.create({
+      data: {
+        titleBg: "Ден на отворените врати",
+        titleEn: "DevHubOne Open Day",
+        descriptionBg: "Елате да разгледате офиса и да се запознаете с екипа.",
+        descriptionEn: "Come see the office and meet the team.",
+        startAt: new Date(`${openDayDate}T15:00:00.000Z`),
+        endAt: new Date(`${openDayDate}T18:00:00.000Z`),
+        isAllDay: false,
+        location: "DevHubOne office, Sofia",
+      },
+    });
+
+    await prisma.eventSeries.create({
+      data: {
+        titleBg: "Ден за екипно сплотяване",
+        titleEn: "Team Building Day",
+        descriptionBg: "Цял ден извън офиса за екипни активности.",
+        descriptionEn: "A full day out of the office for team activities.",
+        startAt: toDateOnly(teamBuildingDate),
+        endAt: toDateOnly(addDaysIso(teamBuildingDate, 1)),
+        isAllDay: true,
+        location: "Vitosha park, Sofia",
+      },
+    });
+
+    await prisma.eventSeries.create({
+      data: {
+        titleBg: "Game Jam уикенд",
+        titleEn: "Game Jam Weekend",
+        descriptionBg: "48-часов game jam, отворен за всички.",
+        descriptionEn: "A 48-hour game jam, open to everyone.",
+        startAt: toDateOnly(gameJamStart),
+        endAt: toDateOnly(addDaysIso(gameJamEnd, 1)),
+        isAllDay: true,
+        location: "DevHubOne office, Sofia",
+      },
+    });
+
+    await prisma.eventSeries.create({
+      data: {
+        titleBg: "Седмична работилница",
+        titleEn: "Weekly Community Workshop",
+        descriptionBg: "Ежеседмична практическа сесия за общността.",
+        descriptionEn: "A recurring hands-on session for the community.",
+        startAt: new Date(`${workshopSeriesStart}T17:00:00.000Z`),
+        endAt: new Date(`${workshopSeriesStart}T19:00:00.000Z`),
+        isAllDay: false,
+        location: "DevHubOne office, Sofia",
+        frequency: "WEEKLY",
+        byWeekdays: ["WEDNESDAY"],
+        recurrenceEndType: "COUNT",
+        recurrenceCount: 6,
+      },
+    });
+  }
+
   console.log("Seed complete. Local-development-only credentials:");
   for (const account of ACCOUNTS) {
     console.log(
@@ -258,6 +326,11 @@ async function main() {
   console.log(`  No-confirmed-attendee warning (Not sure only): ${notSureOnlyFriday}`);
   console.log(`  Changed office hours (10:00-18:00): ${changedHoursMonday}`);
   console.log(`  Closed date: ${closedWednesday}`);
+  console.log("Event demo dates:");
+  console.log(`  One-time timed event (Open Day): ${openDayDate}`);
+  console.log(`  All-day event (Team Building Day): ${teamBuildingDate}`);
+  console.log(`  Multi-day all-day event (Game Jam Weekend): ${gameJamStart} - ${gameJamEnd}`);
+  console.log(`  Weekly recurring event (Community Workshop, every Wednesday x6): starts ${workshopSeriesStart}`);
 }
 
 main()

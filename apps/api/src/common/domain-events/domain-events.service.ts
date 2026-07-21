@@ -13,6 +13,7 @@ export interface DomainEventPayloads {
   "office-schedule.changed": { from: string; to: string };
   "attendance.changed": { userId: string; from: string; to: string };
   "member-status.changed": { userId: string };
+  "event.changed": { seriesId: string };
 }
 
 export type DomainEventName = keyof DomainEventPayloads;

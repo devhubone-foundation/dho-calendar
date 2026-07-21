@@ -1,0 +1,228 @@
+/**
+ * Calendar view/day-modal styles, built on packages/ui's tokens.css custom
+ * properties. Kept in apps/web (not packages/ui) since these layouts are
+ * specific to the calendar feature rather than general-purpose components;
+ * see TOKENS.md for the source design tokens these classes consume.
+ */
+
+.dho-cal-view-switcher {
+  display: flex;
+  gap: var(--dho-space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--dho-space-6);
+}
+
+.dho-cal-empty {
+  color: var(--dho-color-navy);
+  font-style: italic;
+}
+
+/* Month view */
+.dho-cal-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--dho-color-navy);
+  border: 1px solid var(--dho-color-navy);
+  border-radius: var(--dho-radius-sm);
+  overflow: hidden;
+}
+
+.dho-cal-month-cell {
+  background: #fff;
+  min-height: 6rem;
+  padding: var(--dho-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-1);
+  cursor: pointer;
+}
+.dho-cal-month-cell:hover {
+  background: var(--dho-color-paper);
+}
+.dho-cal-month-cell:focus-visible {
+  outline: 2px solid var(--dho-color-navy);
+  outline-offset: -2px;
+}
+.dho-cal-month-cell--outside {
+  background: var(--dho-color-paper);
+  color: var(--dho-color-navy);
+}
+.dho-cal-month-cell--today .dho-cal-month-cell-date {
+  background: var(--dho-color-leaf);
+  color: #fff;
+  border-radius: var(--dho-radius-pill);
+  padding: 0 var(--dho-space-2);
+}
+.dho-cal-month-cell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dho-cal-month-cell-date {
+  font-weight: 700;
+}
+.dho-cal-office-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--dho-radius-pill);
+  display: inline-block;
+}
+.dho-cal-office-dot--open {
+  background: var(--dho-color-leaf);
+}
+.dho-cal-office-dot--closed {
+  background: var(--dho-color-navy);
+  opacity: 0.4;
+}
+.dho-cal-month-cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-1);
+}
+.dho-cal-month-cell-overflow {
+  font-size: 0.75rem;
+  color: var(--dho-color-navy);
+}
+
+/* Event chip (compact) — deliberately more visually prominent than a plain
+ * text line, per PRODUCT_BLUEPRINT.md §14.1/§17. */
+.dho-cal-event-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  background: var(--dho-color-sage);
+  color: var(--dho-color-ink);
+  border-radius: var(--dho-radius-sm);
+  padding: 0.125rem var(--dho-space-2);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: left;
+}
+.dho-cal-event-chip--interactive {
+  cursor: pointer;
+}
+.dho-cal-event-chip--interactive:hover {
+  background: var(--dho-color-teal);
+  color: #fff;
+}
+.dho-cal-event-chip--interactive:focus-visible {
+  outline: 2px solid var(--dho-color-navy);
+  outline-offset: 1px;
+}
+.dho-cal-event-chip-time {
+  font-weight: 700;
+}
+.dho-cal-event-chip-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Week view */
+.dho-cal-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--dho-space-2);
+}
+.dho-cal-week-column {
+  background: #fff;
+  border-radius: var(--dho-radius-sm);
+  padding: var(--dho-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+  min-height: 12rem;
+}
+.dho-cal-week-column--today {
+  border: 2px solid var(--dho-color-leaf);
+}
+.dho-cal-week-column-header {
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--dho-radius-sm);
+  padding: var(--dho-space-1);
+}
+.dho-cal-week-column-header:hover {
+  background: var(--dho-color-paper);
+}
+.dho-cal-week-column-header:focus-visible {
+  outline: 2px solid var(--dho-color-navy);
+}
+.dho-cal-week-column-events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-1);
+}
+
+/* Day view / Upcoming view / day modal — detailed event card */
+.dho-cal-day-list,
+.dho-cal-upcoming-list,
+.dho-cal-day-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-4);
+}
+.dho-cal-upcoming-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+}
+.dho-cal-upcoming-date {
+  color: var(--dho-color-navy);
+}
+
+.dho-cal-event-detail {
+  display: flex;
+  gap: var(--dho-space-4);
+  background: var(--dho-color-paper);
+  border-radius: var(--dho-radius-md);
+  padding: var(--dho-space-4);
+  align-items: flex-start;
+}
+.dho-cal-event-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  flex-wrap: wrap;
+}
+.dho-cal-event-detail-heading h3 {
+  margin: 0;
+}
+.dho-cal-event-detail-meta {
+  color: var(--dho-color-navy);
+  font-weight: 600;
+}
+.dho-cal-event-detail-description {
+  white-space: pre-wrap;
+}
+.dho-cal-event-detail-cover {
+  width: 6rem;
+  height: 6rem;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--dho-radius-sm);
+}
+
+/* Cover image fallback — never breaks layout on a missing/broken image. */
+.dho-cal-cover-fallback {
+  width: 6rem;
+  height: 6rem;
+  flex-shrink: 0;
+  border-radius: var(--dho-radius-sm);
+  background: var(--dho-color-sage);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+}
+
+@media (max-width: 40rem) {
+  .dho-cal-month-grid,
+  .dho-cal-week-grid {
+    grid-template-columns: repeat(7, minmax(2.25rem, 1fr));
+  }
+  .dho-cal-event-detail {
+    flex-direction: column;
+  }
+}
