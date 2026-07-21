@@ -1,11 +1,22 @@
+"use client";
+
+import { Card } from "@dho/ui";
+
+import { LocaleSwitcher } from "../lib/i18n/LocaleSwitcher";
+import { useDictionary } from "../lib/i18n/use-locale";
+
 export default function PublicCalendarPage() {
+  const dictionary = useDictionary();
+
   return (
-    <main>
-      <h1>DevHubOne Office Calendar</h1>
-      <p>
-        This is a platform-foundation placeholder. The public calendar (office hours, attendance,
-        events) is implemented in later issues.
-      </p>
+    <main className="dho-shell-main">
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+        <LocaleSwitcher />
+      </div>
+      <Card>
+        <h1>{dictionary.publicPage.title}</h1>
+        <p>{dictionary.publicPage.subtitle}</p>
+      </Card>
     </main>
   );
 }

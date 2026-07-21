@@ -8,6 +8,7 @@ const config: Config = {
   transform: {
     "^.+\\.(t|j)s$": ["ts-jest", { tsconfig: "tsconfig.json" }],
   },
+  setupFiles: ["<rootDir>/test/integration/env.setup.ts"],
   setupFilesAfterEnv: ["<rootDir>/test/integration/jest.setup.ts"],
   testTimeout: 20000,
   passWithNoTests: true,

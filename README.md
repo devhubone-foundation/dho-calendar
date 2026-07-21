@@ -60,12 +60,18 @@ docker compose --profile full up --build
 
 Runs an isolated, disposable Postgres for the backend integration suite.
 
+`pnpm --filter @dho/api test:integration` auto-loads `apps/api/.env.test`
+(fake, non-secret placeholder values matching CI — safe to commit), so no
+manual exports are needed for the test run itself. Applying migrations to the
+test database still needs `DATABASE_URL` set for that one command, since the
+Prisma CLI runs from `packages/database` and does not read `apps/api/.env.test`:
+
 ```bash
 docker compose --profile test up -d
 DATABASE_URL=postgresql://dho:dho_dev_password@localhost:5433/dho_test \
   pnpm --filter @dho/database prisma:migrate:deploy
-DATABASE_URL=postgresql://dho:dho_dev_password@localhost:5433/dho_test \
-  pnpm --filter @dho/api test:integration
+
+pnpm --filter @dho/api test:integration
 ```
 
 ## Common commands

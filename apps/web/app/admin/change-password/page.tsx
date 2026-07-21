@@ -1,13 +1,16 @@
 "use client";
 
+import { Button, Card, FormField } from "@dho/ui";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { useAuth } from "../../../lib/auth/auth-context";
+import { useDictionary } from "../../../lib/i18n/use-locale";
 
 export default function ChangePasswordPage() {
   const { changePassword, user, status } = useAuth();
   const router = useRouter();
+  const dictionary = useDictionary();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,36 +30,32 @@ export default function ChangePasswordPage() {
       await changePassword(currentPassword, newPassword);
       router.push("/admin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not change password");
+      setError(err instanceof Error ? err.message : dictionary.auth.changePassword.genericError);
     } finally {
       setSubmitting(false);
     }
   }
 
   if (status !== "authenticated") {
-    return <p>Loading...</p>;
+    return <p>{dictionary.common.loading}</p>;
   }
 
   return (
-    <main>
-      <h1>Change your password</h1>
-      {user?.mustChangePassword ? <p>You must set a new password before continuing.</p> : null}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="currentPassword">Current password</label>
-          <br />
-          <input
+    <main className="dho-shell-main">
+      <Card style={{ maxWidth: "24rem", margin: "0 auto" }}>
+        <h1>{dictionary.auth.changePassword.title}</h1>
+        {user?.mustChangePassword ? <p>{dictionary.auth.changePassword.prompt}</p> : null}
+        <form onSubmit={handleSubmit}>
+          <FormField
+            label={dictionary.auth.changePassword.currentPassword}
             id="currentPassword"
             type="password"
             value={currentPassword}
             onChange={(event) => setCurrentPassword(event.target.value)}
             required
           />
-        </div>
-        <div>
-          <label htmlFor="newPassword">New password</label>
-          <br />
-          <input
+          <FormField
+            label={dictionary.auth.changePassword.newPassword}
             id="newPassword"
             type="password"
             value={newPassword}
@@ -64,12 +63,12 @@ export default function ChangePasswordPage() {
             required
             minLength={10}
           />
-        </div>
-        {error ? <p role="alert">{error}</p> : null}
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Saving..." : "Save new password"}
-        </button>
-      </form>
+          {error ? <p role="alert">{error}</p> : null}
+          <Button type="submit" disabled={submitting}>
+            {submitting ? dictionary.auth.changePassword.submitting : dictionary.auth.changePassword.submit}
+          </Button>
+        </form>
+      </Card>
     </main>
   );
 }

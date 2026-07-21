@@ -5,6 +5,7 @@ import type { UserRole } from "@dho/contracts";
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   await prisma.refreshToken.deleteMany();
   await prisma.auditLog.deleteMany();
+  await prisma.memberProfile.deleteMany();
   await prisma.user.deleteMany();
 }
 
@@ -14,6 +15,13 @@ interface CreateTestUserOptions {
   role?: UserRole;
   isActive?: boolean;
   mustChangePassword?: boolean;
+  /** Set to false to create a bare User row with no MemberProfile, e.g. to
+   * exercise a not-found path. Defaults to true since every real account
+   * created by this app now has a profile. */
+  withProfile?: boolean;
+  fullName?: string;
+  qualificationBg?: string;
+  qualificationEn?: string;
 }
 
 export async function createTestUser(
@@ -32,6 +40,17 @@ export async function createTestUser(
       role: options.role ?? "MEMBER",
       isActive: options.isActive ?? true,
       mustChangePassword: options.mustChangePassword ?? false,
+      ...(options.withProfile === false
+        ? {}
+        : {
+            profile: {
+              create: {
+                fullName: options.fullName ?? "Test Member",
+                qualificationBg: options.qualificationBg ?? "Тестова роля",
+                qualificationEn: options.qualificationEn ?? "Test role",
+              },
+            },
+          }),
     },
   });
 

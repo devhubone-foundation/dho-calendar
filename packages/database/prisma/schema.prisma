@@ -14,7 +14,7 @@ enum UserRole {
 }
 
 // Application account identity and auth state. Member-facing profile data
-// (name, picture, qualification) is owned by a later issue's MemberProfile model.
+// (name, picture, qualification) lives on MemberProfile (added by Issue #2).
 model User {
   id                  String    @id @default(cuid())
   email               String    @unique
@@ -30,8 +30,27 @@ model User {
 
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
+  profile       MemberProfile?
 
   @@map("users")
+}
+
+// Member-facing profile fields, separate from account/auth state on User.
+// Contact/login email is intentionally NOT duplicated here: PRODUCT_BLUEPRINT.md
+// §10.1/§10.3 describe a single "login/contact email" field, i.e. User.email.
+model MemberProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  fullName         String
+  qualificationBg  String
+  qualificationEn  String
+  profileImagePath String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("member_profiles")
 }
 
 // One row per issued refresh token. Rotation replaces a row (revokedAt set,

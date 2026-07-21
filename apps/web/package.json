@@ -12,7 +12,7 @@
     "start": "next start --port 3000",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "echo 'no automated tests yet: apps/web is an unstyled auth skeleton, see docs/TESTING_STRATEGY.md UI policy' && exit 0"
+    "test": "vitest run"
   },
   "dependencies": {
     "@dho/config": "workspace:*",
@@ -30,6 +30,7 @@
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "eslint": "^9.17.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   }
 }

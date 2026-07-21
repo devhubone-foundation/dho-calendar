@@ -23,9 +23,6 @@ pnpm-debug.log*
 data/
 postgres-data/
 
-# Uploaded files
-uploads/
-
 # IDE and OS
 .idea/
 .vscode/

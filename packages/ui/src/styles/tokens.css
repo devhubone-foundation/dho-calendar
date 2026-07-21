@@ -1,0 +1,47 @@
+/**
+ * DevHubOne design tokens.
+ * Values and their sources are documented in packages/ui/TOKENS.md.
+ * Do not hard-code these colors/radii anywhere else in the app.
+ */
+:root {
+  /* Sourced from devhubone.com's compiled theme (see TOKENS.md) */
+  --dho-color-ink: #222f45;
+  --dho-color-paper: #eff4ef;
+  --dho-color-navy: #697d92;
+  --dho-color-sage: #82b495;
+  --dho-color-teal: #58a399;
+  --dho-color-leaf: #67b63a;
+
+  /* Derived functional colors, not literal DHO values (see TOKENS.md) */
+  --dho-color-danger: #c0392b;
+  --dho-color-danger-bg: #fbeaea;
+
+  /* Sourced radii */
+  --dho-radius-sm: 0.5rem;
+  --dho-radius-md: 0.75rem;
+  --dho-radius-lg: 1rem;
+  --dho-radius-pill: 9999px;
+
+  /* Sourced typography */
+  --dho-font-body: Raleway, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Derived spacing scale, not literal DHO values (see TOKENS.md) */
+  --dho-space-1: 0.25rem;
+  --dho-space-2: 0.5rem;
+  --dho-space-3: 0.75rem;
+  --dho-space-4: 1rem;
+  --dho-space-6: 1.5rem;
+  --dho-space-8: 2rem;
+
+  --dho-avatar-palette-1: var(--dho-color-navy);
+  --dho-avatar-palette-2: var(--dho-color-sage);
+  --dho-avatar-palette-3: var(--dho-color-teal);
+  --dho-avatar-palette-4: var(--dho-color-leaf);
+}
+
+body {
+  background: var(--dho-color-paper);
+  color: var(--dho-color-ink);
+  font-family: var(--dho-font-body);
+}
