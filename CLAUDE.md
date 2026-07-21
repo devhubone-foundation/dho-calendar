@@ -124,3 +124,97 @@ When acting as the planner:
 - include programmer context, acceptance criteria, automated-test expectations, fast manual test steps, expected ownership, and a ready-to-copy Sonnet handoff prompt;
 - keep all work local-first until the final deployment issue;
 - ensure each PR can use `Closes #<issue>`.
+
+
+## 10. Token-efficient operation
+
+Use the smallest amount of context and output that still preserves correctness.
+
+### Repository reading
+
+* Read every required document, but do not quote, reproduce, or summarize it unless a conflict or task-relevant rule must be reported.
+* When a required document was already read in the current uninterrupted session and has not changed, do not read it again.
+* Inspect only code, tests, schemas, and configuration relevant to the assigned issue or directly affected dependencies.
+* Start with targeted searches for symbols, routes, models, contracts, and tests. Do not recursively inspect unrelated directories.
+* Do not print file contents merely to demonstrate that they were read.
+* Use narrow file ranges and targeted searches instead of repeatedly loading complete large files.
+* Do not inspect generated files, dependency directories, build output, lockfiles, or migrations unrelated to the task unless necessary.
+
+### Communication style
+
+* Be concise and information-dense.
+* Do not narrate routine tool calls, searches, file reads, or obvious implementation actions.
+* Do not repeat the issue description, repository rules, or information already stated in the current conversation.
+* Do not provide tutorials or explain standard framework concepts unless requested.
+* Do not print full source files, large diffs, complete command output, or passing test logs unless requested.
+* For successful commands, report only the command and a one-line result.
+* For failed commands, include only the relevant error lines and diagnosis.
+* Prefer compact headings and bullets over long prose.
+
+### Stage A output budget
+
+The Stage A plan must be complete but compact:
+
+* Target approximately 500–900 words.
+* Summarize the outcome in no more than three bullets.
+* Express acceptance criteria as a concise checklist without restating the issue verbatim.
+* List expected files by module or directory when exact filenames are not yet known.
+* Combine implementation steps that belong to the same vertical.
+* Mention only assumptions, risks, dependencies, conflicts, and refactors that could materially affect implementation.
+* Do not explain routine implementation details.
+* Do not include code or pseudocode.
+* Ask only questions explicitly required by a listed “Decision to confirm” or a genuine blocking contradiction.
+
+### Stage B operation
+
+* After approval, begin implementation without restating the approved plan.
+* Keep progress updates to material discoveries, blockers, changed assumptions, or failed checks.
+* Batch related edits and checks where practical.
+* Do not repeatedly summarize completed work during implementation.
+* Do not ask for confirmation on non-blocking implementation choices that follow existing conventions.
+
+### Completion report budget
+
+The completion report must be concise and avoid duplication:
+
+* Target approximately 600–1,000 words, excluding manual test steps required verbatim by the issue.
+* Describe behavior as a short checklist.
+* Group changed files by purpose; do not describe every minor edit.
+* Report commands in a compact table or one-line list with pass/fail status.
+* Do not include full successful logs.
+* Include error details only for checks that failed or could not run.
+* Refer to unchanged issue acceptance criteria rather than repeating them.
+* Include only real limitations and meaningful follow-up risks.
+* Keep the proposed commit message to one line.
+* Keep the PR description concise while still including scope, testing, and `Closes #<issue>`.
+
+### Context preservation
+
+Before reading or outputting information, check whether it is already available in:
+
+1. the current conversation;
+2. previously read files in the current session;
+3. current tool results.
+
+Do not retrieve or restate the same information twice unless it may have changed or is needed to resolve a contradiction.
+
+Correctness, security, testing truthfulness, and issue completeness take priority over token reduction.
+
+## 11. Subagent policy
+
+Do not use subagents during Stage A.
+
+During Stage B, do not use subagents for general repository exploration,
+implementation, testing, or review.
+
+A subagent may be used only when:
+
+- the task is narrow and independent;
+- using it avoids overloading the main context;
+- its scope is limited to named files, directories, or one concrete question;
+- it cannot spawn additional agents;
+- it uses Haiku unless stronger reasoning is necessary;
+- its result is limited to 10 concise bullets.
+
+Before starting a subagent, state why it is materially more efficient than
+working in the main context. Otherwise, continue directly.
