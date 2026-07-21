@@ -10,7 +10,9 @@ COPY apps/api ./apps/api
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
-RUN pnpm --filter @dho/database db:generate
+# Workspace deps must be built (not just Prisma-generated) before @dho/api's
+# tsc build, since it type-checks against their compiled `dist` output.
+RUN pnpm --filter @dho/config --filter @dho/contracts --filter @dho/database build
 RUN pnpm --filter @dho/api build
 
 FROM node:22-alpine AS runtime

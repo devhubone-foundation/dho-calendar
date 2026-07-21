@@ -14,10 +14,12 @@ Read these before planning or implementing:
 6. [`docs/TESTING_STRATEGY.md`](docs/TESTING_STRATEGY.md) — automated and manual test policy.
 7. [`docs/PARALLEL_WORK_PLAN.md`](docs/PARALLEL_WORK_PLAN.md) — two-programmer planning constraints.
 8. [`docs/PLANNER_PROMPT.md`](docs/PLANNER_PROMPT.md) — prompt for the Opus planning session.
+9. [`docs/iframe-integration.md`](docs/iframe-integration.md) — public iframe embed and resize protocol.
+10. [`docs/RENDER_DEPLOY.md`](docs/RENDER_DEPLOY.md) — public Render deployment guide.
 
 ## Current phase
 
-Issue #1 (platform foundation) has landed the monorepo skeleton, Prisma/PostgreSQL baseline, and the full authentication system. Design tokens, member profiles, and the calendar verticals are implemented by later issues.
+Version 1 is feature-complete (Milestones 1–3, Issues #1–#6): monorepo/Docker/CI foundation, design system, office schedule/attendance, bilingual events, public aggregation/iframe/realtime/audit, and this issue's seed completeness, integration-test coverage, production-like Nginx profile, and Render deployment.
 
 ## Prerequisites
 
@@ -73,6 +75,27 @@ DATABASE_URL=postgresql://dho:dho_dev_password@localhost:5433/dho_test \
 
 pnpm --filter @dho/api test:integration
 ```
+
+## Production-like Compose profile
+
+Runs Postgres, the API, and the web app behind Nginx (ARCHITECTURE.md §17.3) — the closest local approximation of the Render deployment. Nginx applies a request-size limit and forwards WebSocket upgrades; Postgres and uploads persist across `down`/`up` via the same named volumes as the `full` profile.
+
+Build the web image for **same-origin** access through Nginx (matches the Render setup — do not use the `full` profile's `:4000` defaults here):
+
+```bash
+NEXT_PUBLIC_API_ORIGIN= NEXT_PUBLIC_WS_ORIGIN= docker compose --profile prod up --build
+```
+
+Set `APP_ORIGIN=http://localhost:8080` in `apps/api/.env` (the Nginx-facing origin) before starting, then apply migrations/seed as in the full profile. Open `http://localhost:8080`. Verify persistence:
+
+```bash
+docker compose --profile prod down
+docker compose --profile prod up   # data and uploads are still present
+```
+
+## Render deployment
+
+See [`docs/RENDER_DEPLOY.md`](docs/RENDER_DEPLOY.md) for creating the Blueprint (`render.yaml`), running the seed once via Render Shell, and the free-tier limitations (ephemeral uploads, ~30-day free Postgres, cold starts).
 
 ## Common commands
 

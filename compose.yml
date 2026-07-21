@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    profiles: ["db", "full"]
+    profiles: ["db", "full", "prod"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-dho}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dho_dev_password}
@@ -36,7 +36,7 @@ services:
       retries: 10
 
   api:
-    profiles: ["full"]
+    profiles: ["full", "prod"]
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -55,7 +55,7 @@ services:
         condition: service_healthy
 
   web:
-    profiles: ["full"]
+    profiles: ["full", "prod"]
     build:
       context: .
       dockerfile: apps/web/Dockerfile
@@ -67,6 +67,25 @@ services:
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
+      - api
+
+  # Production-like profile (ARCHITECTURE.md §17.3, GitHub issue #6): fronts
+  # `web`/`api` with Nginx, applying request-size limits and forwarding
+  # WebSocket upgrades. `web`/`api` still publish their own ports above for
+  # local debugging; Nginx is the intended single entry point.
+  nginx:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    environment:
+      PORT: 80
+      WEB_UPSTREAM: web:3000
+      API_UPSTREAM: api:4000
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    depends_on:
+      - web
       - api
 
 volumes:
