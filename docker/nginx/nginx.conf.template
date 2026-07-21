@@ -1,0 +1,63 @@
+# Shared Nginx reverse-proxy template (ARCHITECTURE.md §3/§17.3/§26).
+#
+# Used unmodified by both:
+#  - the local `prod` Compose profile (docker/nginx/Dockerfile), where
+#    ${WEB_UPSTREAM}/${API_UPSTREAM} are separate containers on the Compose
+#    network;
+#  - the combined Render deployment image (Dockerfile.render), where they are
+#    127.0.0.1 processes inside the same container.
+#
+# Rendered by docker/scripts/nginx-entrypoint.sh via `envsubst` at container
+# start (so a single static file can bind to Render's dynamic $PORT).
+
+worker_processes auto;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  include       /etc/nginx/mime.types;
+  default_type  application/octet-stream;
+  sendfile      on;
+
+  # Covers the largest allowed upload (10 MB event cover, ARCHITECTURE.md
+  # §13) plus headroom, without leaving the limit unbounded.
+  client_max_body_size 12m;
+
+  server {
+    listen ${PORT};
+    server_name _;
+
+    location /api/ {
+      proxy_pass http://${API_UPSTREAM};
+      proxy_http_version 1.1;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Realtime gateway (ARCHITECTURE.md §9): forward the WebSocket upgrade.
+    location /socket.io/ {
+      proxy_pass http://${API_UPSTREAM};
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_read_timeout 3600s;
+    }
+
+    location / {
+      proxy_pass http://${WEB_UPSTREAM};
+      proxy_http_version 1.1;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+  }
+}

@@ -1,0 +1,45 @@
+# Combined Render deployment image (GitHub issue #6): one container running
+# Nginx + the Next.js standalone server + the NestJS API, all bound behind a
+# single origin on Render's assigned $PORT. See docs/RENDER_DEPLOY.md and
+# ARCHITECTURE.md §26.
+#
+# Build context is the repository root, matching apps/api/Dockerfile and
+# apps/web/Dockerfile.
+FROM node:22-alpine AS base
+RUN corepack enable
+WORKDIR /repo
+
+FROM base AS deps
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
+COPY packages ./packages
+COPY apps/api ./apps/api
+COPY apps/web ./apps/web
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS build
+# Workspace deps must be built (not just installed/Prisma-generated) before
+# @dho/api's and @dho/web's own builds, since both type-check against their
+# compiled `dist` output.
+RUN pnpm --filter @dho/config --filter @dho/contracts --filter @dho/ui --filter @dho/database build
+RUN pnpm --filter @dho/api build
+# NEXT_PUBLIC_API_ORIGIN / NEXT_PUBLIC_WS_ORIGIN are intentionally left unset
+# so the browser bundle falls back to same-origin relative requests and a
+# same-host WebSocket (apps/web/lib/auth/api-client.ts, socket-client.ts).
+RUN pnpm --filter @dho/web build
+# The standalone server resolves public/static assets relative to itself
+# (Next.js standalone-output docs); copy them in explicitly. `public/` is
+# optional (this app doesn't have one today).
+RUN if [ -d apps/web/public ]; then cp -r apps/web/public apps/web/.next/standalone/apps/web/public; fi && \
+    cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+
+FROM node:22-alpine AS runtime
+RUN apk add --no-cache nginx gettext
+ENV NODE_ENV=production
+WORKDIR /repo
+COPY --from=build /repo ./
+COPY docker/nginx/nginx.conf.template /etc/nginx/templates/nginx.conf.template
+COPY docker/scripts/nginx-entrypoint.sh /entrypoint.sh
+COPY docker/scripts/render-start.sh /render-start.sh
+RUN chmod +x /entrypoint.sh /render-start.sh
+
+CMD ["/render-start.sh"]

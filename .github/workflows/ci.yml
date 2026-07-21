@@ -98,3 +98,15 @@ jobs:
 
       - name: Run backend integration tests
         run: pnpm --filter @dho/api test:integration
+
+  production-like-build:
+    name: Production-like Docker build (Nginx profile + Render image)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the local prod-profile Nginx image
+        run: docker build -f docker/nginx/Dockerfile -t dho-calendar-nginx:ci .
+
+      - name: Build the combined Render deployment image
+        run: docker build -f Dockerfile.render -t dho-calendar-render:ci .

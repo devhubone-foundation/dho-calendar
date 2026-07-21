@@ -76,6 +76,18 @@ If the parent page cannot run the listener script (JS disabled, strict CSP block
 
 The calendar connects to the realtime WebSocket gateway for live invalidation (`office-schedule.changed`, `attendance.changed`, `event.changed`, `profile.changed`, `member-status.changed`) and re-fetches the public REST endpoint when one arrives. This is entirely internal to the calendar iframe — the parent page does not need to do anything for it, and the calendar stays correct (via its normal polling-free, fetch-on-navigation behavior) even if the socket never connects.
 
-## Note for Issue #6 (Nginx / production-like deployment)
+## Production / Render embed
 
-The production reverse proxy must forward the WebSocket upgrade handshake for the realtime gateway's path (`Connection: Upgrade` / `Upgrade: websocket` headers) and must not apply a request-size limit low enough to break the handshake. This document does not configure Nginx — see Issue #6 for the production-like Compose/Nginx setup.
+Once deployed on Render (see [`docs/RENDER_DEPLOY.md`](RENDER_DEPLOY.md)), embed the assigned public URL the same way:
+
+```html
+<iframe
+  id="dho-calendar"
+  src="https://dho-calendar.onrender.com/?lang=bg&view=week"
+  title="DevHubOne office calendar"
+  width="100%"
+  style="border: 0; min-height: 480px;"
+></iframe>
+```
+
+The Nginx reverse proxy (`docker/nginx/nginx.conf.template`, used by both the local `prod` Compose profile and the Render deployment image) forwards the WebSocket upgrade handshake (`Connection: Upgrade` / `Upgrade: websocket`) for `/socket.io/` and applies a `client_max_body_size` well above the largest allowed upload, so realtime updates and image uploads both work behind it.

@@ -432,6 +432,17 @@ Useful for parity and end-to-end manual verification.
 
 No automated database backup is required for Version 1. Database and uploads must survive container recreation through named volumes.
 
+### 17.4 Render deployment (V1 public hosting target)
+
+Version 1's public deployment target is Render's free plan (GitHub issue #6), defined in `render.yaml` at the repo root. This is additive to, not a replacement for, the local-first workflow above.
+
+- **One Render web service** running `Dockerfile.render` — the same single deployable stack behind Nginx described in §3 and §26, not two services. `docker/nginx/nginx.conf.template` is shared unmodified between this image and the local `prod` Compose profile.
+- **One free managed Postgres**, wired via `DATABASE_URL` (`fromDatabase`).
+- No cloud object storage is introduced (§25 remains in force): uploads stay on the container's local filesystem, which is **ephemeral on the free plan** (no persistent Disk) — documented in `docs/RENDER_DEPLOY.md`, not worked around.
+- `APP_ORIGIN`/`API_ORIGIN` are set to the assigned `*.onrender.com` URL and `NEXT_PUBLIC_API_ORIGIN`/`NEXT_PUBLIC_WS_ORIGIN` are left unset, so the deployment stays single-origin — the existing `SameSite=lax` cookie auth and single-origin CORS (§19) require no changes.
+- Migrations run automatically via `preDeployCommand`; the seed is run once manually via Render Shell, never automatically.
+- Additional free-tier constraints (Postgres ~30-day expiry, cold starts after idling) are documented, not engineered around.
+
 ## 18. Environment configuration
 
 Each app must validate environment variables at startup. Commit `.env.example`, never real secrets.

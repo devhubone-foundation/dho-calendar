@@ -229,6 +229,7 @@ async function main() {
   const confirmedMonday = nextWeekdayOnOrAfter(today, 1);
   const changedHoursMonday = addDaysIso(confirmedMonday, 7);
   const notSureOnlyFriday = nextWeekdayOnOrAfter(today, 5);
+  const warningClearFriday = addDaysIso(notSureOnlyFriday, 7);
   const closedWednesday = addDaysIso(nextWeekdayOnOrAfter(today, 3), 7);
 
   // Confirmed attendance exception (explicit override, different hours than
@@ -241,6 +242,13 @@ async function main() {
   await upsertAttendanceException(adminId, notSureOnlyFriday, "NOT_ATTENDING", null, null);
   await upsertAttendanceException(memberId, notSureOnlyFriday, "NOT_ATTENDING", null, null);
   await upsertAttendanceException(kalinaId, notSureOnlyFriday, "NOT_SURE", "12:00", "16:00");
+
+  // The following Friday: same starting point (admin/member NOT_ATTENDING),
+  // but Kalina confirms ATTENDING instead of NOT_SURE — demonstrates the
+  // warning clearing once a single active member is confirmed.
+  await upsertAttendanceException(adminId, warningClearFriday, "NOT_ATTENDING", null, null);
+  await upsertAttendanceException(memberId, warningClearFriday, "NOT_ATTENDING", null, null);
+  await upsertAttendanceException(kalinaId, warningClearFriday, "ATTENDING", "12:00", "16:00");
 
   // A date-specific office-hours change and a one-off closure, each isolated
   // to a single date without touching the weekly defaults.
@@ -324,6 +332,7 @@ async function main() {
   console.log("Office schedule / attendance demo dates:");
   console.log(`  Confirmed ATTENDING exception (member@...): ${confirmedMonday}`);
   console.log(`  No-confirmed-attendee warning (Not sure only): ${notSureOnlyFriday}`);
+  console.log(`  Warning cleared (Kalina confirms ATTENDING): ${warningClearFriday}`);
   console.log(`  Changed office hours (10:00-18:00): ${changedHoursMonday}`);
   console.log(`  Closed date: ${closedWednesday}`);
   console.log("Event demo dates:");

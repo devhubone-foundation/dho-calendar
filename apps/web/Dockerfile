@@ -10,6 +10,9 @@ COPY apps/web ./apps/web
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
+# Workspace deps must be built (not just installed) before @dho/web's build,
+# since it imports their compiled `dist` output.
+RUN pnpm --filter @dho/config --filter @dho/contracts --filter @dho/ui build
 ARG NEXT_PUBLIC_API_ORIGIN
 ARG NEXT_PUBLIC_WS_ORIGIN
 ENV NEXT_PUBLIC_API_ORIGIN=$NEXT_PUBLIC_API_ORIGIN

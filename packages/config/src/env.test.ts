@@ -86,8 +86,25 @@ describe("parseWebEnv", () => {
     expect(env.PORT).toBe(3000);
   });
 
-  it("throws EnvValidationError when NEXT_PUBLIC_API_ORIGIN is missing", () => {
+  it("defaults NEXT_PUBLIC_API_ORIGIN to the same-origin sentinel when missing (Render deployment)", () => {
     const { NEXT_PUBLIC_API_ORIGIN: _omit, ...rest } = validWebEnv;
-    expect(() => parseWebEnv(rest)).toThrow(EnvValidationError);
+    const env = parseWebEnv(rest);
+    expect(env.NEXT_PUBLIC_API_ORIGIN).toBe("");
+  });
+
+  it("accepts an explicit empty string as the same-origin sentinel (Render deployment)", () => {
+    const env = parseWebEnv({
+      ...validWebEnv,
+      NEXT_PUBLIC_API_ORIGIN: "",
+      NEXT_PUBLIC_WS_ORIGIN: "",
+    });
+    expect(env.NEXT_PUBLIC_API_ORIGIN).toBe("");
+    expect(env.NEXT_PUBLIC_WS_ORIGIN).toBe("");
+  });
+
+  it("rejects a non-empty value that isn't a valid URL", () => {
+    expect(() => parseWebEnv({ ...validWebEnv, NEXT_PUBLIC_API_ORIGIN: "not-a-url" })).toThrow(
+      EnvValidationError,
+    );
   });
 });
