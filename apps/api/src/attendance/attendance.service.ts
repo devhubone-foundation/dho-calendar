@@ -40,6 +40,17 @@ import {
 } from "./attendance.resolver";
 import { evaluateDayWarning } from "./attendance.warnings";
 
+/** One active member's clamped attendance on one date — the public-calendar
+ * composition unit (see `resolveActiveMembersForRange`). */
+export interface ActiveMemberAttendanceDay {
+  userId: string;
+  /** "YYYY-MM-DD" */
+  date: string;
+  status: AttendanceStatus;
+  publicStartTime: string | null;
+  publicEndTime: string | null;
+}
+
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -282,6 +293,66 @@ export class AttendanceService {
     }
 
     return { warnings };
+  }
+
+  /** All active members' resolved attendance for every date in [from, to]
+   * (capped to the 3-month horizon), already clamped to office hours. Feeds
+   * the public-calendar module's confirmed/uncertain attendee composition
+   * (PRODUCT_BLUEPRINT.md §13) — mirrors the per-member resolution loop used
+   * by `computeWarnings` but returns full per-date results instead of an
+   * aggregated warning. */
+  async resolveActiveMembersForRange(from: string, to: string): Promise<ActiveMemberAttendanceDay[]> {
+    const today = todayInTimezone(this.env.OFFICE_TIMEZONE);
+    const clampedTo = clampToHorizon(to, today);
+
+    const activeUsers = await this.prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, createdAt: true },
+    });
+    if (activeUsers.length === 0) {
+      return [];
+    }
+
+    const [officeDays, officeDefaultVersions, weeklyRows, exceptionRows] = await Promise.all([
+      this.officeSchedule.resolveRange(from, clampedTo),
+      this.officeSchedule.getDefaultVersions(),
+      this.prisma.memberWeeklySchedule.findMany({
+        where: { userId: { in: activeUsers.map((user) => user.id) } },
+      }),
+      this.prisma.attendanceException.findMany({
+        where: {
+          userId: { in: activeUsers.map((user) => user.id) },
+          date: { gte: toDateOnly(from), lte: toDateOnly(clampedTo) },
+        },
+      }),
+    ]);
+
+    const officeByDate = new Map(officeDays.map((day) => [day.date, day]));
+    const weeklyByUser = groupByUserId(weeklyRows);
+    const exceptionsByUser = groupByUserId(exceptionRows);
+    const dates = enumerateDates(from, clampedTo);
+
+    const results: ActiveMemberAttendanceDay[] = [];
+    for (const user of activeUsers) {
+      const weeklyVersions = toWeeklyVersions(weeklyByUser.get(user.id) ?? []);
+      const exceptions = toExceptionRows(exceptionsByUser.get(user.id) ?? []);
+      const memberCreatedAt = dateInTimezone(user.createdAt, this.env.OFFICE_TIMEZONE);
+
+      for (const date of dates) {
+        const officeDay = officeByDate.get(date) ?? { isOpen: false, startTime: null, endTime: null };
+        const memberDay = resolveMemberDay(weeklyVersions, exceptions, officeDefaultVersions, memberCreatedAt, date);
+        const clamped = clampToOfficeHours(memberDay, officeDay);
+        results.push({
+          userId: user.id,
+          date,
+          status: clamped.status,
+          publicStartTime: clamped.publicStartTime,
+          publicEndTime: clamped.publicEndTime,
+        });
+      }
+    }
+
+    return results;
   }
 
   private async getUserOrThrow(userId: string): Promise<{ id: string; createdAt: Date }> {

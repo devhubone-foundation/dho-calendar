@@ -53,7 +53,7 @@ describe("Authorization (integration)", () => {
       .get("/api/audit")
       .set("Authorization", `Bearer ${login.body.accessToken}`)
       .expect(200);
-    expect(Array.isArray(response.body)).toBe(true);
+    expect(Array.isArray(response.body.entries)).toBe(true);
   });
 
   it("rejects an inactive user even with a previously valid access token", async () => {

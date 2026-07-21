@@ -9,6 +9,7 @@ import { AuditService } from "../audit/audit.service";
 import { hashPassword } from "../auth/password.util";
 import { AppError } from "../common/errors/app-error";
 import { throwIfUniqueEmailViolation, toMemberSummary } from "../common/member-summary.util";
+import { DomainEventsService } from "../common/domain-events/domain-events.service";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -16,6 +17,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly domainEvents: DomainEventsService,
   ) {}
 
   async list(): Promise<MemberSummary[]> {
@@ -61,6 +63,7 @@ export class UsersService {
         targetId: user.id,
         metadata: { email: user.email, role: user.role, fullName: data.fullName },
       });
+      this.domainEvents.emit("member-status.changed", { userId: user.id });
 
       return toMemberSummary(user, user.profile!);
     } catch (error) {
@@ -92,6 +95,7 @@ export class UsersService {
         targetId: id,
         metadata: { email: data.email, role: data.role, fullName: data.fullName },
       });
+      this.domainEvents.emit("profile.changed", { userId: id });
 
       return toMemberSummary(user, profile);
     } catch (error) {
@@ -132,6 +136,7 @@ export class UsersService {
       targetType: "User",
       targetId: id,
     });
+    this.domainEvents.emit("member-status.changed", { userId: id });
 
     return toMemberSummary(user, user.profile!);
   }

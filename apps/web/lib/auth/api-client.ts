@@ -5,6 +5,7 @@ import type {
   AttendanceExceptionInput,
   AttendanceExceptionListResponse,
   AttendanceWarningListResponse,
+  AuditLogListResponse,
   ChangePasswordRequest,
   CreateEventRequest,
   DateRangeQuery,
@@ -484,4 +485,10 @@ export function removeEventCover(seriesId: string, accessToken: string): Promise
     method: "DELETE",
     headers: authHeaders(accessToken),
   });
+}
+
+// --- Audit history (ADMIN-only) ---
+
+export function getAuditLog(accessToken: string): Promise<AuditLogListResponse> {
+  return apiFetch<AuditLogListResponse>("/api/audit", { headers: authHeaders(accessToken) });
 }

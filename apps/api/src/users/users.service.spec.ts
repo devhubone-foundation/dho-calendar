@@ -5,7 +5,8 @@ describe("UsersService.setActive", () => {
   it("rejects an admin trying to deactivate their own account", async () => {
     const prisma = { user: { findUnique: jest.fn() } } as never;
     const audit = { record: jest.fn() } as never;
-    const service = new UsersService(prisma, audit);
+    const domainEvents = { emit: jest.fn() } as never;
+    const service = new UsersService(prisma, audit, domainEvents);
 
     await expect(service.setActive("admin-1", "admin-1", false)).rejects.toBeInstanceOf(AppError);
   });
@@ -34,7 +35,8 @@ describe("UsersService.setActive", () => {
       refreshToken: { updateMany: jest.fn() },
     } as never;
     const audit = { record: jest.fn() } as never;
-    const service = new UsersService(prisma, audit);
+    const domainEvents = { emit: jest.fn() } as never;
+    const service = new UsersService(prisma, audit, domainEvents);
 
     await expect(service.setActive("admin-1", "admin-1", true)).resolves.toMatchObject({
       id: "admin-1",

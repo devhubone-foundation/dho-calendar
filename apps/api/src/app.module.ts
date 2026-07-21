@@ -12,6 +12,8 @@ import { HealthModule } from "./health/health.module";
 import { OfficeScheduleModule } from "./office-schedule/office-schedule.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ProfilesModule } from "./profiles/profiles.module";
+import { PublicCalendarModule } from "./public-calendar/public-calendar.module";
+import { RealtimeModule } from "./realtime/realtime.module";
 import { UploadsModule } from "./uploads/uploads.module";
 import { UsersModule } from "./users/users.module";
 
@@ -29,6 +31,8 @@ import { UsersModule } from "./users/users.module";
     OfficeScheduleModule,
     AttendanceModule,
     EventsModule,
+    PublicCalendarModule,
+    RealtimeModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: JwtAccessGuard }],
 })
