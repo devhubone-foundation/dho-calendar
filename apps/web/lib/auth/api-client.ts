@@ -1,17 +1,31 @@
 import type {
   AdminCreateMemberRequest,
   AdminUpdateMemberRequest,
+  AttendanceException,
+  AttendanceExceptionInput,
+  AttendanceExceptionListResponse,
+  AttendanceWarningListResponse,
   ChangePasswordRequest,
+  DateRangeQuery,
   ErrorResponse,
   LoginRequest,
   LoginResponse,
+  MemberEffectiveAttendanceRangeResponse,
   MemberListResponse,
   MemberStatusUpdateRequest,
   MemberSummary,
+  MemberWeeklyScheduleResponse,
   MeResponse,
+  OfficeEffectiveRangeResponse,
+  OfficeScheduleDefaultsResponse,
+  OfficeScheduleException,
+  OfficeScheduleExceptionInput,
+  OfficeScheduleExceptionListResponse,
   ProfilePictureUploadResponse,
   RefreshResponse,
   SelfProfileUpdateRequest,
+  UpdateOfficeDefaultsRequest,
+  UpdateWeeklyScheduleRequest,
 } from "@dho/contracts";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN ?? "";
@@ -152,5 +166,196 @@ export function adminSetMemberStatus(
     method: "PATCH",
     headers: authHeaders(accessToken),
     body: JSON.stringify(payload),
+  });
+}
+
+function rangeQuery(range: DateRangeQuery): string {
+  return `?from=${range.from}&to=${range.to}`;
+}
+
+// --- Office schedule (admin manages defaults/exceptions; reads are open to any authenticated user) ---
+
+export function getOfficeDefaults(accessToken: string): Promise<OfficeScheduleDefaultsResponse> {
+  return apiFetch<OfficeScheduleDefaultsResponse>("/api/office-schedule/defaults", {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function updateOfficeDefaults(
+  payload: UpdateOfficeDefaultsRequest,
+  accessToken: string,
+): Promise<OfficeScheduleDefaultsResponse> {
+  return apiFetch<OfficeScheduleDefaultsResponse>("/api/office-schedule/defaults", {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listOfficeExceptions(
+  range: DateRangeQuery,
+  accessToken: string,
+): Promise<OfficeScheduleExceptionListResponse> {
+  return apiFetch<OfficeScheduleExceptionListResponse>(`/api/office-schedule/exceptions${rangeQuery(range)}`, {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function upsertOfficeException(
+  date: string,
+  payload: OfficeScheduleExceptionInput,
+  accessToken: string,
+): Promise<OfficeScheduleException> {
+  return apiFetch<OfficeScheduleException>(`/api/office-schedule/exceptions/${date}`, {
+    method: "PUT",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteOfficeException(date: string, accessToken: string): Promise<void> {
+  return apiFetch<void>(`/api/office-schedule/exceptions/${date}`, {
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function getOfficeEffectiveRange(
+  range: DateRangeQuery,
+  accessToken: string,
+): Promise<OfficeEffectiveRangeResponse> {
+  return apiFetch<OfficeEffectiveRangeResponse>(`/api/office-schedule/effective${rangeQuery(range)}`, {
+    headers: authHeaders(accessToken),
+  });
+}
+
+// --- Attendance: self ---
+
+export function getOwnWeeklySchedule(accessToken: string): Promise<MemberWeeklyScheduleResponse> {
+  return apiFetch<MemberWeeklyScheduleResponse>("/api/attendance/me/weekly", {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function updateOwnWeeklySchedule(
+  payload: UpdateWeeklyScheduleRequest,
+  accessToken: string,
+): Promise<MemberWeeklyScheduleResponse> {
+  return apiFetch<MemberWeeklyScheduleResponse>("/api/attendance/me/weekly", {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listOwnAttendanceExceptions(
+  range: DateRangeQuery,
+  accessToken: string,
+): Promise<AttendanceExceptionListResponse> {
+  return apiFetch<AttendanceExceptionListResponse>(`/api/attendance/me/exceptions${rangeQuery(range)}`, {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function upsertOwnAttendanceException(
+  date: string,
+  payload: AttendanceExceptionInput,
+  accessToken: string,
+): Promise<AttendanceException> {
+  return apiFetch<AttendanceException>(`/api/attendance/me/exceptions/${date}`, {
+    method: "PUT",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteOwnAttendanceException(date: string, accessToken: string): Promise<void> {
+  return apiFetch<void>(`/api/attendance/me/exceptions/${date}`, {
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function getOwnEffectiveAttendance(
+  range: DateRangeQuery,
+  accessToken: string,
+): Promise<MemberEffectiveAttendanceRangeResponse> {
+  return apiFetch<MemberEffectiveAttendanceRangeResponse>(`/api/attendance/me/effective${rangeQuery(range)}`, {
+    headers: authHeaders(accessToken),
+  });
+}
+
+// --- Attendance: admin managing any member ---
+
+export function getMemberWeeklySchedule(
+  userId: string,
+  accessToken: string,
+): Promise<MemberWeeklyScheduleResponse> {
+  return apiFetch<MemberWeeklyScheduleResponse>(`/api/attendance/members/${userId}/weekly`, {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function updateMemberWeeklySchedule(
+  userId: string,
+  payload: UpdateWeeklyScheduleRequest,
+  accessToken: string,
+): Promise<MemberWeeklyScheduleResponse> {
+  return apiFetch<MemberWeeklyScheduleResponse>(`/api/attendance/members/${userId}/weekly`, {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listMemberAttendanceExceptions(
+  userId: string,
+  range: DateRangeQuery,
+  accessToken: string,
+): Promise<AttendanceExceptionListResponse> {
+  return apiFetch<AttendanceExceptionListResponse>(
+    `/api/attendance/members/${userId}/exceptions${rangeQuery(range)}`,
+    { headers: authHeaders(accessToken) },
+  );
+}
+
+export function upsertMemberAttendanceException(
+  userId: string,
+  date: string,
+  payload: AttendanceExceptionInput,
+  accessToken: string,
+): Promise<AttendanceException> {
+  return apiFetch<AttendanceException>(`/api/attendance/members/${userId}/exceptions/${date}`, {
+    method: "PUT",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteMemberAttendanceException(
+  userId: string,
+  date: string,
+  accessToken: string,
+): Promise<void> {
+  return apiFetch<void>(`/api/attendance/members/${userId}/exceptions/${date}`, {
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function getMemberEffectiveAttendance(
+  userId: string,
+  range: DateRangeQuery,
+  accessToken: string,
+): Promise<MemberEffectiveAttendanceRangeResponse> {
+  return apiFetch<MemberEffectiveAttendanceRangeResponse>(
+    `/api/attendance/members/${userId}/effective${rangeQuery(range)}`,
+    { headers: authHeaders(accessToken) },
+  );
+}
+
+export function getAttendanceWarnings(accessToken: string): Promise<AttendanceWarningListResponse> {
+  return apiFetch<AttendanceWarningListResponse>("/api/attendance/warnings", {
+    headers: authHeaders(accessToken),
   });
 }

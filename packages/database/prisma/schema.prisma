@@ -28,9 +28,11 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
-  profile       MemberProfile?
+  refreshTokens        RefreshToken[]
+  auditLogs            AuditLog[]
+  profile              MemberProfile?
+  weeklySchedules      MemberWeeklySchedule[]
+  attendanceExceptions AttendanceException[]
 
   @@map("users")
 }
@@ -86,4 +88,91 @@ model AuditLog {
 
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AttendanceStatus {
+  ATTENDING
+  NOT_SURE
+  NOT_ATTENDING
+}
+
+// Versioned per weekday: an admin edit inserts a new row with a fresh
+// effectiveFrom instead of mutating history, so resolving a past date always
+// finds the version that was actually in force on that date (ARCHITECTURE.md
+// §11 "Schedule changes apply only to future dates"). Resolution = latest row
+// for a weekday with effectiveFrom <= the requested date. Seed rows use a
+// fixed epoch effectiveFrom so every real-world date resolves to something.
+model OfficeScheduleDefault {
+  id            String   @id @default(cuid())
+  weekday       Weekday
+  isOpen        Boolean
+  startTime     String?
+  endTime       String?
+  effectiveFrom DateTime @db.Date
+  createdAt     DateTime @default(now())
+
+  @@index([weekday, effectiveFrom])
+  @@map("office_schedule_defaults")
+}
+
+// One row per calendar date; always wins over the weekly default for that
+// exact date (open/close/change-hours), per PRODUCT_BLUEPRINT.md §9.3.
+model OfficeScheduleException {
+  id        String   @id @default(cuid())
+  date      DateTime @unique @db.Date
+  isOpen    Boolean
+  startTime String?
+  endTime   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("office_schedule_exceptions")
+}
+
+// A member's personal recurring weekly schedule, versioned the same way as
+// OfficeScheduleDefault. Until a member has any rows for a given weekday, the
+// resolver falls back to the office default as of the member's account
+// creation date (see AttendanceService) rather than materializing a copy.
+model MemberWeeklySchedule {
+  id            String   @id @default(cuid())
+  userId        String
+  weekday       Weekday
+  attends       Boolean
+  startTime     String?
+  endTime       String?
+  effectiveFrom DateTime @db.Date
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, weekday, effectiveFrom])
+  @@map("member_weekly_schedules")
+}
+
+// A member's date-specific override; always wins over their weekly schedule
+// for that exact date (PRODUCT_BLUEPRINT.md §12.6).
+model AttendanceException {
+  id        String           @id @default(cuid())
+  userId    String
+  date      DateTime         @db.Date
+  status    AttendanceStatus
+  startTime String?
+  endTime   String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("attendance_exceptions")
 }

@@ -32,6 +32,10 @@ export const apiEnvSchema = z
     LOGIN_RATE_LIMIT_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
     LOGIN_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
     LOGIN_RATE_LIMIT_LOCKOUT_MINUTES: z.coerce.number().int().positive().default(15),
+    // How many days ahead the admin no-confirmed-attendee warning scans
+    // (PRODUCT_BLUEPRINT.md §19.3: "must be configurable ... not buried as
+    // an unexplained magic number").
+    ATTENDANCE_WARNING_LOOKAHEAD_DAYS: z.coerce.number().int().positive().default(14),
   })
   .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
     message: "JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different values",

@@ -3,6 +3,10 @@ import { PrismaClient } from "@dho/database";
 import type { UserRole } from "@dho/contracts";
 
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
+  await prisma.attendanceException.deleteMany();
+  await prisma.memberWeeklySchedule.deleteMany();
+  await prisma.officeScheduleException.deleteMany();
+  await prisma.officeScheduleDefault.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.memberProfile.deleteMany();
@@ -55,4 +59,22 @@ export async function createTestUser(
   });
 
   return { id: user.id, email: user.email, password };
+}
+
+/** Seeds the standard Mon/Wed/Fri 12:00-20:00 office defaults, effective from
+ * a fixed epoch, so office-schedule/attendance tests have a real baseline to
+ * resolve against without duplicating the production seed script. */
+export async function seedOfficeDefaults(prisma: PrismaClient): Promise<void> {
+  const effectiveFrom = new Date("2000-01-01T00:00:00.000Z");
+  await prisma.officeScheduleDefault.createMany({
+    data: [
+      { weekday: "MONDAY", isOpen: true, startTime: "12:00", endTime: "20:00", effectiveFrom },
+      { weekday: "TUESDAY", isOpen: false, startTime: null, endTime: null, effectiveFrom },
+      { weekday: "WEDNESDAY", isOpen: true, startTime: "12:00", endTime: "20:00", effectiveFrom },
+      { weekday: "THURSDAY", isOpen: false, startTime: null, endTime: null, effectiveFrom },
+      { weekday: "FRIDAY", isOpen: true, startTime: "12:00", endTime: "20:00", effectiveFrom },
+      { weekday: "SATURDAY", isOpen: false, startTime: null, endTime: null, effectiveFrom },
+      { weekday: "SUNDAY", isOpen: false, startTime: null, endTime: null, effectiveFrom },
+    ],
+  });
 }
