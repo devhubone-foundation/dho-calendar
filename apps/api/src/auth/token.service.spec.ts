@@ -18,6 +18,7 @@ function buildEnv(overrides: Partial<ApiEnv> = {}): ApiEnv {
     LOGIN_RATE_LIMIT_MAX_ATTEMPTS: 5,
     LOGIN_RATE_LIMIT_WINDOW_MINUTES: 15,
     LOGIN_RATE_LIMIT_LOCKOUT_MINUTES: 15,
+    ATTENDANCE_WARNING_LOOKAHEAD_DAYS: 14,
     ...overrides,
   };
 }

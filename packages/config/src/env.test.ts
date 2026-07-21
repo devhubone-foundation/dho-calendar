@@ -29,6 +29,12 @@ describe("parseApiEnv", () => {
     expect(env.LOGIN_RATE_LIMIT_WINDOW_MINUTES).toBe(15);
     expect(env.LOGIN_RATE_LIMIT_LOCKOUT_MINUTES).toBe(15);
     expect(env.OFFICE_TIMEZONE).toBe("Europe/Sofia");
+    expect(env.ATTENDANCE_WARNING_LOOKAHEAD_DAYS).toBe(14);
+  });
+
+  it("accepts a custom attendance warning look-ahead", () => {
+    const env = parseApiEnv({ ...validApiEnv, ATTENDANCE_WARNING_LOOKAHEAD_DAYS: "21" });
+    expect(env.ATTENDANCE_WARNING_LOOKAHEAD_DAYS).toBe(21);
   });
 
   it("throws EnvValidationError when a required variable is missing", () => {

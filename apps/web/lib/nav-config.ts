@@ -12,6 +12,8 @@ export interface NavItem {
  */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: (dictionary) => dictionary.nav.dashboard, adminOnly: false },
+  { href: "/admin/attendance", label: (dictionary) => dictionary.nav.attendance, adminOnly: false },
   { href: "/admin/profile", label: (dictionary) => dictionary.nav.profile, adminOnly: false },
   { href: "/admin/members", label: (dictionary) => dictionary.nav.members, adminOnly: true },
+  { href: "/admin/settings", label: (dictionary) => dictionary.nav.settings, adminOnly: true },
 ];
