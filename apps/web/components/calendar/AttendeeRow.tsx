@@ -35,7 +35,7 @@ export function AttendeeRow({ member, locale, uncertain }: AttendeeRowProps) {
           {uncertain ? <Badge variant="not-sure">{dictionary.calendar.notSureBadge}</Badge> : null}
         </div>
         <p className="dho-cal-attendee-meta">
-          {qualification} · {member.startTime}–{member.endTime}
+          {qualification} · {member.slots.map((slot) => `${slot.startTime}–${slot.endTime}`).join(", ")}
         </p>
         <p className="dho-cal-attendee-contact">
           {dictionary.calendar.contactLabel}:{" "}

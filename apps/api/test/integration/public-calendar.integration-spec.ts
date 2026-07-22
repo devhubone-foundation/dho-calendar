@@ -66,8 +66,7 @@ describe("Public calendar (integration)", () => {
         qualificationBg: "Програмист",
         qualificationEn: "Programmer",
         contactEmail: member.email,
-        startTime: "12:00",
-        endTime: "20:00",
+        slots: [{ startTime: "12:00", endTime: "20:00" }],
       }),
     ]);
     // No internal identifiers, audit data, or account/security fields.
@@ -88,7 +87,7 @@ describe("Public calendar (integration)", () => {
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${admin.id}/exceptions/${friday}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "NOT_SURE", startTime: "12:00", endTime: "16:00" })
+      .send({ status: "NOT_SURE", slots: [{ startTime: "12:00", endTime: "16:00" }] })
       .expect(200);
 
     await request(app.getHttpServer())
@@ -130,7 +129,7 @@ describe("Public calendar (integration)", () => {
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${absentMember.id}/exceptions/${monday}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "NOT_ATTENDING", startTime: null, endTime: null })
+      .send({ status: "NOT_ATTENDING", slots: [] })
       .expect(200);
 
     const response = await request(app.getHttpServer())
@@ -204,14 +203,14 @@ describe("Public calendar (integration)", () => {
     await request(app.getHttpServer())
       .put(`/api/attendance/me/exceptions/${monday}`)
       .set("Authorization", `Bearer ${memberToken}`)
-      .send({ status: "ATTENDING", startTime: "09:00", endTime: "14:00" })
+      .send({ status: "ATTENDING", slots: [{ startTime: "09:00", endTime: "14:00" }] })
       .expect(200);
     // The admin inherits Monday 12:00-20:00 by default; push it fully outside
     // office hours so it should disappear from the public list entirely.
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${admin.id}/exceptions/${monday}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "ATTENDING", startTime: "07:00", endTime: "09:00" })
+      .send({ status: "ATTENDING", slots: [{ startTime: "07:00", endTime: "09:00" }] })
       .expect(200);
 
     const response = await request(app.getHttpServer())
@@ -220,12 +219,45 @@ describe("Public calendar (integration)", () => {
 
     const day = response.body.days.find((d: { date: string }) => d.date === monday);
     expect(day.confirmedAttendees).toEqual([
-      expect.objectContaining({ contactEmail: member.email, startTime: "12:00", endTime: "14:00" }),
+      expect.objectContaining({
+        contactEmail: member.email,
+        slots: [{ startTime: "12:00", endTime: "14:00" }],
+      }),
     ]);
     expect(day.confirmedAttendees.some((m: { contactEmail: string }) => m.contactEmail === admin.email)).toBe(
       false,
     );
     // Still publicly open — the member's clamped interval keeps them confirmed.
     expect(day.isPublicOpenDay).toBe(true);
+  });
+
+  it("publishes multiple attendance slots for one member on one date", async () => {
+    const member = await createTestUser(prisma);
+    const memberToken = await login(app, member.email, member.password);
+    const today = todayInTimezone(OFFICE_TIMEZONE);
+    const monday = nextWeekdayOnOrAfter(today, 1);
+
+    await request(app.getHttpServer())
+      .put(`/api/attendance/me/exceptions/${monday}`)
+      .set("Authorization", `Bearer ${memberToken}`)
+      .send({
+        status: "ATTENDING",
+        slots: [
+          { startTime: "13:00", endTime: "15:00" },
+          { startTime: "16:00", endTime: "19:00" },
+        ],
+      })
+      .expect(200);
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/public/calendar?from=${monday}&to=${monday}`)
+      .expect(200);
+
+    const day = response.body.days.find((d: { date: string }) => d.date === monday);
+    const entry = day.confirmedAttendees.find((m: { contactEmail: string }) => m.contactEmail === member.email);
+    expect(entry.slots).toEqual([
+      { startTime: "13:00", endTime: "15:00" },
+      { startTime: "16:00", endTime: "19:00" },
+    ]);
   });
 });

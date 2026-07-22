@@ -915,3 +915,127 @@
 .dho-cal-month-nav-label {
   font-weight: 700;
 }
+
+/* Admin attendance page: single-day view (Issue #19). */
+.dho-attday-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dho-space-3);
+  margin-bottom: var(--dho-space-3);
+}
+.dho-attday-heading {
+  text-align: center;
+}
+.dho-attday-heading h1 {
+  margin: 0;
+}
+.dho-attday-date {
+  margin: 0;
+  color: var(--dho-color-navy);
+}
+.dho-attday-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+  margin-top: var(--dho-space-3);
+}
+.dho-attday-status-headline {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0;
+}
+.dho-attday-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dho-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dho-attday-slots li {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--dho-radius-sm);
+  background: var(--dho-status-attending-bg);
+  color: var(--dho-status-attending-text);
+  font-variant-numeric: tabular-nums;
+}
+.dho-attday-conflict {
+  margin: 0;
+  color: var(--dho-color-navy);
+  font-size: 0.9rem;
+}
+.dho-attday-officehours {
+  margin: 0;
+  color: var(--dho-color-navy);
+  font-size: 0.9rem;
+}
+
+/* Reusable multi-slot time editor (daily + weekly attendance modals). */
+.dho-slot-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+}
+.dho-slot-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-1, 0.25rem);
+}
+/* Start time / end time / remove button. Distinct from the bilingual
+ * EN/BG `.dho-field-pair` (Issue #12) since it holds 3 items, not 2: that
+ * class's 2-column desktop grid left the remove button orphaned on its own
+ * row instead of beside the end-time field. */
+.dho-slot-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--dho-space-2);
+}
+@media (min-width: 40rem) {
+  .dho-slot-fields {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+    gap: var(--dho-space-4);
+  }
+}
+.dho-status-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dho-space-3);
+}
+.dho-status-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  min-height: var(--dho-touch-target);
+  font-weight: normal;
+  cursor: pointer;
+}
+
+/* Default weekly-schedule modal: one row per weekday. */
+.dho-weekday-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+  padding: var(--dho-space-3) 0;
+  border-bottom: 1px solid var(--dho-color-grey);
+}
+.dho-weekday-row:last-of-type {
+  border-bottom: none;
+}
+.dho-weekday-row-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dho-space-2);
+}
+.dho-weekday-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  font-weight: normal;
+}

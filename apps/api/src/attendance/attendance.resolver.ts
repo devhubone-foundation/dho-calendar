@@ -1,4 +1,4 @@
-import type { AttendanceStatus, OfficeEffectiveDay, Weekday } from "@dho/contracts";
+import type { AttendanceSlot, AttendanceStatus, OfficeEffectiveDay, Weekday } from "@dho/contracts";
 
 import {
   type OfficeDefaultVersion,
@@ -9,8 +9,7 @@ import { weekdayOf } from "../common/calendar-date.util";
 export interface MemberWeeklyVersion {
   weekday: Weekday;
   attends: boolean;
-  startTime: string | null;
-  endTime: string | null;
+  slots: AttendanceSlot[];
   /** "YYYY-MM-DD" — the date this version starts applying from. */
   effectiveFrom: string;
   /** ISO timestamp, used only to break ties between same-day versions. */
@@ -21,29 +20,28 @@ export interface AttendanceExceptionRow {
   /** "YYYY-MM-DD" */
   date: string;
   status: AttendanceStatus;
-  startTime: string | null;
-  endTime: string | null;
+  slots: AttendanceSlot[];
 }
 
 export interface ResolvedWeeklyDay {
   attends: boolean;
-  startTime: string | null;
-  endTime: string | null;
+  slots: AttendanceSlot[];
 }
 
 export interface MemberDayResult {
   status: AttendanceStatus;
-  enteredStartTime: string | null;
-  enteredEndTime: string | null;
+  enteredSlots: AttendanceSlot[];
+  /** True when this date has its own date-specific change rather than
+   * falling back to the personal weekly default. */
+  isCustomized: boolean;
 }
 
 export interface MemberEffectiveAttendanceResult {
   status: AttendanceStatus;
-  enteredStartTime: string | null;
-  enteredEndTime: string | null;
+  isCustomized: boolean;
+  enteredSlots: AttendanceSlot[];
   officeIsOpen: boolean;
-  publicStartTime: string | null;
-  publicEndTime: string | null;
+  publicSlots: AttendanceSlot[];
   isClamped: boolean;
 }
 
@@ -66,7 +64,7 @@ export function resolveMemberWeeklyForWeekday(
     }
     return current.createdAt > best.createdAt ? current : best;
   });
-  return { attends: latest.attends, startTime: latest.startTime, endTime: latest.endTime };
+  return { attends: latest.attends, slots: latest.slots };
 }
 
 /**
@@ -85,37 +83,35 @@ export function resolveMemberDay(
 ): MemberDayResult {
   const exception = exceptions.find((e) => e.date === date);
   if (exception) {
-    return {
-      status: exception.status,
-      enteredStartTime: exception.startTime,
-      enteredEndTime: exception.endTime,
-    };
+    return { status: exception.status, enteredSlots: exception.slots, isCustomized: true };
   }
 
   const weekday = weekdayOf(date);
   const explicitWeekly = resolveMemberWeeklyForWeekday(weeklyVersions, weekday, date);
   if (explicitWeekly) {
     return explicitWeekly.attends
-      ? {
-          status: "ATTENDING",
-          enteredStartTime: explicitWeekly.startTime,
-          enteredEndTime: explicitWeekly.endTime,
-        }
-      : { status: "NOT_ATTENDING", enteredStartTime: null, enteredEndTime: null };
+      ? { status: "ATTENDING", enteredSlots: explicitWeekly.slots, isCustomized: false }
+      : { status: "NOT_ATTENDING", enteredSlots: [], isCustomized: false };
   }
 
   const inherited = resolveOfficeDefaultForWeekday(officeDefaultVersions, weekday, memberCreatedAt);
-  return inherited.isOpen
-    ? { status: "ATTENDING", enteredStartTime: inherited.startTime, enteredEndTime: inherited.endTime }
-    : { status: "NOT_ATTENDING", enteredStartTime: null, enteredEndTime: null };
+  if (!inherited.isOpen) {
+    return { status: "NOT_ATTENDING", enteredSlots: [], isCustomized: false };
+  }
+  const inheritedSlots: AttendanceSlot[] =
+    inherited.startTime && inherited.endTime
+      ? [{ startTime: inherited.startTime, endTime: inherited.endTime }]
+      : [];
+  return { status: "ATTENDING", enteredSlots: inheritedSlots, isCustomized: false };
 }
 
 /**
- * Intersects the entered interval with effective office hours. Out-of-hours
- * attendance is never mutated — `enteredStartTime`/`enteredEndTime` always
- * carry exactly what was saved; `publicStartTime`/`publicEndTime` are the
- * clamped view, null whenever there is nothing to publicly show (not
- * attending, office closed, or zero overlap with office hours).
+ * Intersects each entered slot with effective office hours. Out-of-hours
+ * attendance is never mutated — `enteredSlots` always carries exactly what
+ * was saved; `publicSlots` is the clamped view, with slots that have zero
+ * overlap dropped entirely. `isClamped` is true whenever the public slot
+ * list differs from what was entered in any way (a changed time or a
+ * dropped slot).
  */
 export function clampToOfficeHours(
   memberDay: MemberDayResult,
@@ -123,36 +119,36 @@ export function clampToOfficeHours(
 ): MemberEffectiveAttendanceResult {
   const base = {
     status: memberDay.status,
-    enteredStartTime: memberDay.enteredStartTime,
-    enteredEndTime: memberDay.enteredEndTime,
+    isCustomized: memberDay.isCustomized,
+    enteredSlots: memberDay.enteredSlots,
     officeIsOpen: office.isOpen,
   };
 
-  const hasInterval =
-    memberDay.status !== "NOT_ATTENDING" &&
-    office.isOpen &&
-    memberDay.enteredStartTime !== null &&
-    memberDay.enteredEndTime !== null &&
-    office.startTime !== null &&
-    office.endTime !== null;
+  const canHaveInterval =
+    memberDay.status !== "NOT_ATTENDING" && office.isOpen && office.startTime !== null && office.endTime !== null;
 
-  if (!hasInterval) {
-    return { ...base, publicStartTime: null, publicEndTime: null, isClamped: false };
+  if (!canHaveInterval) {
+    return { ...base, publicSlots: [], isClamped: false };
   }
 
-  const enteredStart = memberDay.enteredStartTime as string;
-  const enteredEnd = memberDay.enteredEndTime as string;
   const officeStart = office.startTime as string;
   const officeEnd = office.endTime as string;
 
-  const clampedStart = enteredStart > officeStart ? enteredStart : officeStart;
-  const clampedEnd = enteredEnd < officeEnd ? enteredEnd : officeEnd;
-
-  if (clampedStart >= clampedEnd) {
-    // The entered interval does not overlap office hours at all.
-    return { ...base, publicStartTime: null, publicEndTime: null, isClamped: true };
+  const publicSlots: AttendanceSlot[] = [];
+  let isClamped = false;
+  for (const slot of memberDay.enteredSlots) {
+    const clampedStart = slot.startTime > officeStart ? slot.startTime : officeStart;
+    const clampedEnd = slot.endTime < officeEnd ? slot.endTime : officeEnd;
+    if (clampedStart >= clampedEnd) {
+      // No overlap with office hours at all — drop the slot from public view.
+      isClamped = true;
+      continue;
+    }
+    if (clampedStart !== slot.startTime || clampedEnd !== slot.endTime) {
+      isClamped = true;
+    }
+    publicSlots.push({ startTime: clampedStart, endTime: clampedEnd });
   }
 
-  const isClamped = clampedStart !== enteredStart || clampedEnd !== enteredEnd;
-  return { ...base, publicStartTime: clampedStart, publicEndTime: clampedEnd, isClamped };
+  return { ...base, publicSlots, isClamped };
 }

@@ -36,7 +36,12 @@ describe("PublicCalendarService.getCalendar", () => {
     const service = makeService({
       officeDays: [{ date: "2026-07-20", isOpen: true, startTime: "12:00", endTime: "20:00", source: "DEFAULT" }],
       memberDays: [
-        { userId: "user-1", date: "2026-07-20", status: "ATTENDING", publicStartTime: "12:00", publicEndTime: "20:00" },
+        {
+          userId: "user-1",
+          date: "2026-07-20",
+          status: "ATTENDING",
+          publicSlots: [{ startTime: "12:00", endTime: "20:00" }],
+        },
       ],
       users: [activeUser],
     });
@@ -51,18 +56,47 @@ describe("PublicCalendarService.getCalendar", () => {
         qualificationBg: "Програмист",
         qualificationEn: "Programmer",
         contactEmail: "ada@devhubone.local",
-        startTime: "12:00",
-        endTime: "20:00",
+        slots: [{ startTime: "12:00", endTime: "20:00" }],
       },
     ]);
     expect(result.days[0]?.uncertainAttendees).toEqual([]);
+  });
+
+  it("includes multiple slots for one member on one date", async () => {
+    const service = makeService({
+      officeDays: [{ date: "2026-07-20", isOpen: true, startTime: "10:00", endTime: "20:00", source: "DEFAULT" }],
+      memberDays: [
+        {
+          userId: "user-1",
+          date: "2026-07-20",
+          status: "ATTENDING",
+          publicSlots: [
+            { startTime: "10:00", endTime: "12:00" },
+            { startTime: "14:00", endTime: "18:00" },
+          ],
+        },
+      ],
+      users: [activeUser],
+    });
+
+    const result = await service.getCalendar("2026-07-20", "2026-07-20");
+
+    expect(result.days[0]?.confirmedAttendees[0]?.slots).toEqual([
+      { startTime: "10:00", endTime: "12:00" },
+      { startTime: "14:00", endTime: "18:00" },
+    ]);
   });
 
   it("does not mark a day open when only NOT_SURE members are confirmed", async () => {
     const service = makeService({
       officeDays: [{ date: "2026-07-21", isOpen: true, startTime: "12:00", endTime: "20:00", source: "DEFAULT" }],
       memberDays: [
-        { userId: "user-1", date: "2026-07-21", status: "NOT_SURE", publicStartTime: "12:00", publicEndTime: "20:00" },
+        {
+          userId: "user-1",
+          date: "2026-07-21",
+          status: "NOT_SURE",
+          publicSlots: [{ startTime: "12:00", endTime: "20:00" }],
+        },
       ],
       users: [activeUser],
     });
@@ -74,12 +108,10 @@ describe("PublicCalendarService.getCalendar", () => {
     expect(result.days[0]?.confirmedAttendees).toEqual([]);
   });
 
-  it("excludes an ATTENDING member whose clamped interval has zero overlap with office hours", async () => {
+  it("excludes an ATTENDING member whose clamped slots have zero overlap with office hours", async () => {
     const service = makeService({
       officeDays: [{ date: "2026-07-22", isOpen: true, startTime: "12:00", endTime: "20:00", source: "DEFAULT" }],
-      memberDays: [
-        { userId: "user-1", date: "2026-07-22", status: "ATTENDING", publicStartTime: null, publicEndTime: null },
-      ],
+      memberDays: [{ userId: "user-1", date: "2026-07-22", status: "ATTENDING", publicSlots: [] }],
       users: [activeUser],
     });
 
@@ -105,7 +137,12 @@ describe("PublicCalendarService.getCalendar", () => {
     const service = makeService({
       officeDays: [{ date: "2026-07-20", isOpen: true, startTime: "12:00", endTime: "20:00", source: "DEFAULT" }],
       memberDays: [
-        { userId: "user-1", date: "2026-07-20", status: "ATTENDING", publicStartTime: "12:00", publicEndTime: "20:00" },
+        {
+          userId: "user-1",
+          date: "2026-07-20",
+          status: "ATTENDING",
+          publicSlots: [{ startTime: "12:00", endTime: "20:00" }],
+        },
       ],
       users: [activeUser],
     });

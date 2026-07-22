@@ -82,7 +82,7 @@ export function AttendanceMemberModal({ open, selected, locale, onClose }: Atten
             {uncertain ? dictionary.calendar.notSureBadge : dictionary.calendar.legendAttending}
           </span>
           <span className="dho-attn-modal-status-time">
-            {member.startTime}–{member.endTime}
+            {member.slots.map((slot) => `${slot.startTime}–${slot.endTime}`).join(", ")}
           </span>
         </div>
 
