@@ -272,6 +272,8 @@ const bg: Dictionary = {
     viewAsListAction: "Превключи към списък",
     closeModal: "Затвори",
     attendanceMemberRowLabel: "Виж детайли за присъствието на {name}",
+    attendanceMemberModalTitle: "Присъствие на {date}",
+    contactButtonLabel: "Свържи се",
   },
   audit: {
     title: "История на действията",

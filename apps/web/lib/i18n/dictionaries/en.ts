@@ -267,6 +267,8 @@ const en = {
     viewAsListAction: "Switch to list view",
     closeModal: "Close",
     attendanceMemberRowLabel: "View attendance details for {name}",
+    attendanceMemberModalTitle: "Attendance on {date}",
+    contactButtonLabel: "Contact",
   },
   audit: {
     title: "Audit history",
