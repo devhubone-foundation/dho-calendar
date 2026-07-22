@@ -112,6 +112,12 @@ export function resolveMemberDay(
  * overlap dropped entirely. `isClamped` is true whenever the public slot
  * list differs from what was entered in any way (a changed time or a
  * dropped slot).
+ *
+ * PRODUCT_BLUEPRINT.md §12.8/§13: confirmed (`ATTENDING`) attendance on a
+ * date the base schedule marks closed overrides that closure — there is no
+ * office-hours bound to clamp against, so the entered slots pass through
+ * unclamped as `publicSlots`. `NOT_SURE`/`NOT_ATTENDING` never open a closed
+ * date, so they keep the empty-slots behavior.
  */
 export function clampToOfficeHours(
   memberDay: MemberDayResult,
@@ -123,6 +129,10 @@ export function clampToOfficeHours(
     enteredSlots: memberDay.enteredSlots,
     officeIsOpen: office.isOpen,
   };
+
+  if (memberDay.status === "ATTENDING" && !office.isOpen) {
+    return { ...base, publicSlots: memberDay.enteredSlots, isClamped: false };
+  }
 
   const canHaveInterval =
     memberDay.status !== "NOT_ATTENDING" && office.isOpen && office.startTime !== null && office.endTime !== null;

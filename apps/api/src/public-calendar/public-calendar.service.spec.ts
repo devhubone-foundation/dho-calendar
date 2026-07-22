@@ -121,7 +121,7 @@ describe("PublicCalendarService.getCalendar", () => {
     expect(result.days[0]?.confirmedAttendees).toEqual([]);
   });
 
-  it("does not mark a closed office day open even with a confirmed attendee", async () => {
+  it("does not mark a closed office day open when there are no attendees", async () => {
     const service = makeService({
       officeDays: [{ date: "2026-07-23", isOpen: false, startTime: null, endTime: null, source: "EXCEPTION" }],
       memberDays: [],
@@ -131,6 +131,80 @@ describe("PublicCalendarService.getCalendar", () => {
     const result = await service.getCalendar("2026-07-23", "2026-07-23");
 
     expect(result.days[0]).toMatchObject({ isPublicOpenDay: false, office: { isOpen: false, isChanged: true } });
+  });
+
+  it("does not mark a closed office day open with only NOT_SURE attendees (PRODUCT_BLUEPRINT.md §12.8/§13)", async () => {
+    const service = makeService({
+      officeDays: [{ date: "2026-07-23", isOpen: false, startTime: null, endTime: null, source: "DEFAULT" }],
+      memberDays: [{ userId: "user-1", date: "2026-07-23", status: "NOT_SURE", publicSlots: [] }],
+      users: [activeUser],
+    });
+
+    const result = await service.getCalendar("2026-07-23", "2026-07-23");
+
+    expect(result.days[0]).toMatchObject({ isPublicOpenDay: false, office: { isOpen: false } });
+    expect(result.days[0]?.uncertainAttendees).toEqual([]);
+  });
+
+  it("opens a closed office day when a member is confirmed ATTENDING, using the member's entered interval as office hours (PRODUCT_BLUEPRINT.md §12.8/§13)", async () => {
+    const service = makeService({
+      officeDays: [{ date: "2026-07-23", isOpen: false, startTime: null, endTime: null, source: "DEFAULT" }],
+      memberDays: [
+        {
+          userId: "user-1",
+          date: "2026-07-23",
+          status: "ATTENDING",
+          publicSlots: [{ startTime: "09:00", endTime: "13:00" }],
+        },
+      ],
+      users: [activeUser],
+    });
+
+    const result = await service.getCalendar("2026-07-23", "2026-07-23");
+
+    expect(result.days[0]).toMatchObject({
+      isPublicOpenDay: true,
+      office: { isOpen: true, startTime: "09:00", endTime: "13:00" },
+    });
+    expect(result.days[0]?.confirmedAttendees[0]?.slots).toEqual([{ startTime: "09:00", endTime: "13:00" }]);
+  });
+
+  it("uses the min-start/max-end span across multiple confirmed attendees when opening a closed day", async () => {
+    const secondUser = {
+      id: "user-2",
+      email: "grace@devhubone.local",
+      profile: {
+        fullName: "Grace Hopper",
+        qualificationBg: "Програмист",
+        qualificationEn: "Programmer",
+        profileImagePath: null,
+      },
+    };
+    const service = makeService({
+      officeDays: [{ date: "2026-07-23", isOpen: false, startTime: null, endTime: null, source: "DEFAULT" }],
+      memberDays: [
+        {
+          userId: "user-1",
+          date: "2026-07-23",
+          status: "ATTENDING",
+          publicSlots: [{ startTime: "09:00", endTime: "13:00" }],
+        },
+        {
+          userId: "user-2",
+          date: "2026-07-23",
+          status: "ATTENDING",
+          publicSlots: [{ startTime: "14:00", endTime: "17:00" }],
+        },
+      ],
+      users: [activeUser, secondUser],
+    });
+
+    const result = await service.getCalendar("2026-07-23", "2026-07-23");
+
+    expect(result.days[0]).toMatchObject({
+      isPublicOpenDay: true,
+      office: { isOpen: true, startTime: "09:00", endTime: "17:00" },
+    });
   });
 
   it("never includes an internal member ID field in the public output", async () => {

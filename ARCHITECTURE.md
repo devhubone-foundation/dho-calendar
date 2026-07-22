@@ -2,10 +2,12 @@
 
 ## Document status
 
-- **Version:** 1.0
+- **Version:** 1.1
 - **Status:** Approved implementation baseline
 - **Product source of truth:** `PRODUCT_BLUEPRINT.md`
 - **Primary audience:** Developers, Claude planning agents, Claude implementation agents, reviewers, and testers
+- **Change history:**
+  - v1.1 (2026-07-22) — §11: confirmed attendance can override an otherwise-closed effective schedule, matching PRODUCT_BLUEPRINT.md v1.3 (Issue #20).
 
 ## 1. Purpose
 
@@ -293,8 +295,8 @@ Additional rules:
 - Date-specific exceptions always win within their domain.
 - Schedule changes apply only to future dates.
 - Historical behavior is not recalculated by later default changes.
-- Confirmed attendance counts toward office coverage.
-- `NOT_SURE` appears publicly with a distinct indicator but does not satisfy confirmed coverage.
+- Confirmed attendance counts toward office coverage, and can also override an otherwise-closed effective schedule: an `ATTENDING` member on a date the base schedule marks closed makes that date effectively open for public display, with public hours derived from confirmed attendees' entered intervals (PRODUCT_BLUEPRINT.md §12.8/§13).
+- `NOT_SURE` appears publicly with a distinct indicator but does not satisfy confirmed coverage, and never overrides a closed schedule.
 - `NOT_ATTENDING` does not appear as a present person.
 - A configured working day with no confirmed attendees triggers an admin warning and is not presented publicly as a normal open day.
 - Events may still appear publicly on such a date.

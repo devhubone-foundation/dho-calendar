@@ -157,6 +157,8 @@ const bg: Dictionary = {
     },
     dayStatusOfficeClosed: "Офисът е затворен",
     officeClosedNotice: "Това няма да се брои като присъствие в офиса — офисът е затворен на тази дата.",
+    attendanceOpensClosedDayNotice:
+      "Офисът е затворен на тази дата, но потвърденото ви присъствие ще отвори Хъба за тази дата.",
     officeHoursLabel: "Работно време: {start}–{end}",
     editThisDay: "Редактирай този ден",
     editDayTitle: "Редактиране на {date}",
