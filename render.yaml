@@ -17,10 +17,11 @@ services:
     plan: free
     healthCheckPath: /api/health
     autoDeployTrigger: commit
-    # Applies committed Prisma migrations before the new version starts
-    # serving traffic (ARCHITECTURE.md §22). The seed is intentionally NOT
-    # run here — run it once via the Render Shell (docs/RENDER_DEPLOY.md).
-    preDeployCommand: pnpm --filter @dho/database prisma:migrate:deploy
+    # NOTE: Render's free instance type supports neither a preDeployCommand
+    # nor Shell/SSH access, so migrations (prisma migrate deploy) and the
+    # one-time demo seed run at container boot in docker/scripts/render-start.sh
+    # instead (ARCHITECTURE.md §22, docs/RENDER_DEPLOY.md). migrate deploy is
+    # idempotent across cold starts; the seed is guarded by RUN_SEED_ON_BOOT.
     envVars:
       - key: NODE_ENV
         value: production
@@ -56,6 +57,11 @@ services:
         value: "15"
       - key: ATTENDANCE_WARNING_LOOKAHEAD_DAYS
         value: "14"
+      # Runs the idempotent demo seed at boot (render-start.sh). Set to
+      # "false" in the Render dashboard once real data exists so cold starts
+      # skip it.
+      - key: RUN_SEED_ON_BOOT
+        value: "true"
       # NEXT_PUBLIC_API_ORIGIN / NEXT_PUBLIC_WS_ORIGIN are intentionally
       # absent: they're inlined into the browser bundle at Docker build time
       # (Dockerfile.render passes no build args for them), so the client
