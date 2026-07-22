@@ -1,9 +1,9 @@
 "use client";
 
-import { Avatar, Badge, Button } from "@dho/ui";
+import { Avatar, Badge, Button, cn } from "@dho/ui";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { resolveUploadUrl } from "../../../lib/auth/api-client";
 import { useAuth } from "../../../lib/auth/auth-context";
@@ -16,6 +16,7 @@ export default function AdminShellLayout({ children }: { children: ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const dictionary = useDictionary();
+  const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -25,6 +26,11 @@ export default function AdminShellLayout({ children }: { children: ReactNode }) 
     }
   }, [status, user, router]);
 
+  // Collapse the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
+
   if (status !== "authenticated" || !user || user.mustChangePassword) {
     return <p>{dictionary.common.loading}</p>;
   }
@@ -33,7 +39,16 @@ export default function AdminShellLayout({ children }: { children: ReactNode }) 
 
   return (
     <div className="dho-shell">
-      <header className="dho-shell-header">
+      <header className={cn("dho-shell-header", navOpen && "dho-shell--nav-open")}>
+        <button
+          type="button"
+          className="dho-shell-menu-toggle"
+          aria-expanded={navOpen}
+          aria-label={dictionary.common.menu}
+          onClick={() => setNavOpen((open) => !open)}
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
         <span className="dho-shell-brand">{dictionary.nav.brandName}</span>
         <nav className="dho-shell-nav" aria-label={dictionary.nav.brandName}>
           {visibleItems.map((item) => (

@@ -122,7 +122,7 @@ export default function CalendarPage() {
         <ViewSwitcher view={view} onChange={setView} />
 
         {view !== "upcoming" ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+          <div className="dho-cal-nav-row">
             <Button variant="secondary" size="small" onClick={goPrevious}>
               {dictionary.calendar.previous}
             </Button>

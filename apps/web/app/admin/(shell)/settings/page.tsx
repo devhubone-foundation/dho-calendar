@@ -186,7 +186,7 @@ export default function OfficeSettingsPage() {
   }
 
   return (
-    <>
+    <div className="dho-stack">
       <Card>
         <h1>{dictionary.officeSettings.title}</h1>
         <h2>{dictionary.officeSettings.weeklyDefaultsTitle}</h2>
@@ -195,55 +195,62 @@ export default function OfficeSettingsPage() {
         {loadError ? <p role="alert">{loadError}</p> : null}
 
         {days ? (
-          <form onSubmit={handleSaveDefaults}>
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "1rem" }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left" }} />
-                  <th style={{ textAlign: "left" }}>{dictionary.officeSettings.open}</th>
-                  <th style={{ textAlign: "left" }}>{dictionary.officeSettings.startTime}</th>
-                  <th style={{ textAlign: "left" }}>{dictionary.officeSettings.endTime}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {days.map((day) => (
-                  <tr key={day.weekday}>
-                    <td>{dictionary.weekdays[day.weekday]}</td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        aria-label={`${dictionary.weekdays[day.weekday]} ${dictionary.officeSettings.open}`}
-                        checked={day.isOpen}
-                        onChange={(event) => updateDay(day.weekday, { isOpen: event.target.checked })}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="time"
-                        className="dho-input"
-                        aria-label={`${dictionary.weekdays[day.weekday]} ${dictionary.officeSettings.startTime}`}
-                        value={day.startTime}
-                        disabled={!day.isOpen}
-                        onChange={(event) => updateDay(day.weekday, { startTime: event.target.value })}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="time"
-                        className="dho-input"
-                        aria-label={`${dictionary.weekdays[day.weekday]} ${dictionary.officeSettings.endTime}`}
-                        value={day.endTime}
-                        disabled={!day.isOpen}
-                        onChange={(event) => updateDay(day.weekday, { endTime: event.target.value })}
-                      />
-                    </td>
+          <form onSubmit={handleSaveDefaults} className="dho-stack">
+            <div className="dho-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th />
+                    <th>{dictionary.officeSettings.open}</th>
+                    <th>{dictionary.officeSettings.startTime}</th>
+                    <th>{dictionary.officeSettings.endTime}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {days.map((day) => (
+                    <tr key={day.weekday}>
+                      <td>{dictionary.weekdays[day.weekday]}</td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          className="dho-checkbox-lg"
+                          aria-label={`${dictionary.weekdays[day.weekday]} ${dictionary.officeSettings.open}`}
+                          checked={day.isOpen}
+                          onChange={(event) => updateDay(day.weekday, { isOpen: event.target.checked })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="time"
+                          className="dho-input"
+                          aria-label={`${dictionary.weekdays[day.weekday]} ${dictionary.officeSettings.startTime}`}
+                          value={day.startTime}
+                          disabled={!day.isOpen}
+                          onChange={(event) => updateDay(day.weekday, { startTime: event.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="time"
+                          className="dho-input"
+                          aria-label={`${dictionary.weekdays[day.weekday]} ${dictionary.officeSettings.endTime}`}
+                          value={day.endTime}
+                          disabled={!day.isOpen}
+                          onChange={(event) => updateDay(day.weekday, { endTime: event.target.value })}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             {saveMessage ? <p>{saveMessage}</p> : null}
-            {saveError ? <p role="alert">{saveError}</p> : null}
-            <Button type="submit" disabled={saving}>
+            {saveError ? (
+              <p role="alert" className="dho-field-error">
+                {saveError}
+              </p>
+            ) : null}
+            <Button type="submit" variant="accent" disabled={saving} style={{ alignSelf: "flex-start" }}>
               {saving ? dictionary.officeSettings.saving : dictionary.officeSettings.saveChanges}
             </Button>
           </form>
@@ -252,49 +259,55 @@ export default function OfficeSettingsPage() {
         )}
       </Card>
 
-      <Card style={{ marginTop: "1.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Card>
+        <div className="dho-page-header">
           <h2>{dictionary.officeSettings.exceptionsTitle}</h2>
-          <Button onClick={openNewExceptionModal}>{dictionary.officeSettings.newException}</Button>
+          <Button variant="accent" onClick={openNewExceptionModal}>
+            {dictionary.officeSettings.newException}
+          </Button>
         </div>
         <p>{dictionary.officeSettings.exceptionsHint}</p>
 
         {exceptionsError ? <p role="alert">{exceptionsError}</p> : null}
 
-        {exceptions && exceptions.length === 0 ? <p>{dictionary.officeSettings.noExceptions}</p> : null}
+        {exceptions && exceptions.length === 0 ? <p className="dho-cal-empty">{dictionary.officeSettings.noExceptions}</p> : null}
 
         {exceptions && exceptions.length > 0 ? (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: "left" }}>{dictionary.officeSettings.date}</th>
-                <th style={{ textAlign: "left" }}>{dictionary.officeSettings.open}</th>
-                <th style={{ textAlign: "left" }}>{dictionary.officeSettings.hours}</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {exceptions.map((exception) => (
-                <tr key={exception.date}>
-                  <td>{exception.date}</td>
-                  <td>{exception.isOpen ? dictionary.officeSettings.open : dictionary.officeSettings.closed}</td>
-                  <td>
-                    {exception.isOpen && exception.startTime && exception.endTime
-                      ? `${exception.startTime}–${exception.endTime}`
-                      : "—"}
-                  </td>
-                  <td style={{ display: "flex", gap: "0.5rem" }}>
-                    <Button variant="secondary" size="small" onClick={() => openEditExceptionModal(exception)}>
-                      {dictionary.officeSettings.edit}
-                    </Button>
-                    <Button variant="danger" size="small" onClick={() => setConfirmingDelete(exception)}>
-                      {dictionary.officeSettings.delete}
-                    </Button>
-                  </td>
+          <div className="dho-table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>{dictionary.officeSettings.date}</th>
+                  <th>{dictionary.officeSettings.open}</th>
+                  <th>{dictionary.officeSettings.hours}</th>
+                  <th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {exceptions.map((exception) => (
+                  <tr key={exception.date}>
+                    <td>{exception.date}</td>
+                    <td>{exception.isOpen ? dictionary.officeSettings.open : dictionary.officeSettings.closed}</td>
+                    <td>
+                      {exception.isOpen && exception.startTime && exception.endTime
+                        ? `${exception.startTime}–${exception.endTime}`
+                        : "—"}
+                    </td>
+                    <td>
+                      <div className="dho-row" style={{ gap: "0.5rem" }}>
+                        <Button variant="secondary" size="small" onClick={() => openEditExceptionModal(exception)}>
+                          {dictionary.officeSettings.edit}
+                        </Button>
+                        <Button variant="danger" size="small" onClick={() => setConfirmingDelete(exception)}>
+                          {dictionary.officeSettings.delete}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : null}
       </Card>
 
@@ -305,8 +318,9 @@ export default function OfficeSettingsPage() {
           setEditingDate(null);
         }}
         title={dictionary.officeSettings.newException}
+        closeLabel={dictionary.common.close}
       >
-        <form onSubmit={handleSaveException}>
+        <form onSubmit={handleSaveException} className="dho-stack">
           <FormField
             label={dictionary.officeSettings.date}
             type="date"
@@ -315,32 +329,37 @@ export default function OfficeSettingsPage() {
             disabled={editingDate !== null}
             required
           />
-          <div className="dho-field">
-            <label htmlFor="exceptionIsOpen">{dictionary.officeSettings.open}</label>
+          <label className="dho-checkbox-row" htmlFor="exceptionIsOpen">
             <input
               id="exceptionIsOpen"
               type="checkbox"
               checked={exceptionForm.isOpen}
               onChange={(event) => setExceptionForm((prev) => ({ ...prev, isOpen: event.target.checked }))}
             />
+            {dictionary.officeSettings.open}
+          </label>
+          <div className="dho-field-pair">
+            <FormField
+              label={dictionary.officeSettings.startTime}
+              type="time"
+              value={exceptionForm.startTime}
+              disabled={!exceptionForm.isOpen}
+              onChange={(event) => setExceptionForm((prev) => ({ ...prev, startTime: event.target.value }))}
+            />
+            <FormField
+              label={dictionary.officeSettings.endTime}
+              type="time"
+              value={exceptionForm.endTime}
+              disabled={!exceptionForm.isOpen}
+              onChange={(event) => setExceptionForm((prev) => ({ ...prev, endTime: event.target.value }))}
+            />
           </div>
-          <FormField
-            label={dictionary.officeSettings.startTime}
-            type="time"
-            value={exceptionForm.startTime}
-            disabled={!exceptionForm.isOpen}
-            onChange={(event) => setExceptionForm((prev) => ({ ...prev, startTime: event.target.value }))}
-          />
-          <FormField
-            label={dictionary.officeSettings.endTime}
-            type="time"
-            value={exceptionForm.endTime}
-            disabled={!exceptionForm.isOpen}
-            onChange={(event) => setExceptionForm((prev) => ({ ...prev, endTime: event.target.value }))}
-          />
-          {exceptionError ? <p role="alert">{exceptionError}</p> : null}
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-            <Button type="submit">{dictionary.officeSettings.save}</Button>
+          {exceptionError ? (
+            <p role="alert" className="dho-field-error">
+              {exceptionError}
+            </p>
+          ) : null}
+          <div className="dho-modal-actions">
             <Button
               type="button"
               variant="secondary"
@@ -351,6 +370,9 @@ export default function OfficeSettingsPage() {
             >
               {dictionary.officeSettings.cancel}
             </Button>
+            <Button type="submit" variant="accent">
+              {dictionary.officeSettings.save}
+            </Button>
           </div>
         </form>
       </Modal>
@@ -359,17 +381,18 @@ export default function OfficeSettingsPage() {
         open={confirmingDelete !== null}
         onClose={() => setConfirmingDelete(null)}
         title={dictionary.officeSettings.confirmDeleteTitle}
+        closeLabel={dictionary.common.close}
       >
         <p>{dictionary.officeSettings.confirmDeleteBody}</p>
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-          <Button variant="danger" onClick={() => void handleConfirmDelete()}>
-            {dictionary.common.confirm}
-          </Button>
+        <div className="dho-modal-actions">
           <Button variant="secondary" onClick={() => setConfirmingDelete(null)}>
             {dictionary.officeSettings.cancel}
           </Button>
+          <Button variant="danger" onClick={() => void handleConfirmDelete()}>
+            {dictionary.common.confirm}
+          </Button>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }

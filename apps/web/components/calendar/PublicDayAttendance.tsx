@@ -38,7 +38,7 @@ function AttendeeRow({
           <strong>{member.fullName}</strong>
           {/* Distinct badge so uncertain attendance is never confused with
               confirmed presence (PRODUCT_BLUEPRINT.md §12.3). */}
-          {uncertain ? <Badge variant="muted">{dictionary.attendanceStatus.NOT_SURE}</Badge> : null}
+          {uncertain ? <Badge variant="not-sure">{dictionary.calendar.notSureBadge}</Badge> : null}
         </div>
         <p className="dho-cal-attendee-meta">
           {qualification} · {member.startTime}–{member.endTime}
@@ -68,6 +68,10 @@ export function PublicDayAttendance({
   return (
     <section className="dho-cal-day-office">
       <p className="dho-cal-day-office-state">
+        <span
+          className={`dho-cal-office-dot ${office.isOpen ? "dho-cal-office-dot--open" : "dho-cal-office-dot--closed"}`}
+          aria-hidden="true"
+        />
         {office.isOpen
           ? `${dictionary.calendar.officeOpen} ${office.startTime}–${office.endTime}`
           : dictionary.calendar.officeClosed}

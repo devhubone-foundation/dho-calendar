@@ -159,89 +159,100 @@ export default function MembersPage() {
 
   return (
     <Card>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="dho-page-header">
         <h1>{dictionary.members.title}</h1>
-        <Button onClick={() => setCreating(true)}>{dictionary.members.newMember}</Button>
+        <Button variant="accent" onClick={() => setCreating(true)}>
+          {dictionary.members.newMember}
+        </Button>
       </div>
 
       {listError ? <p role="alert">{listError}</p> : null}
       {statusError ? <p role="alert">{statusError}</p> : null}
 
       {members ? (
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left" }}>{dictionary.members.fullName}</th>
-              <th style={{ textAlign: "left" }}>{dictionary.members.email}</th>
-              <th style={{ textAlign: "left" }}>{dictionary.members.role}</th>
-              <th style={{ textAlign: "left" }}>{dictionary.members.qualificationEn}</th>
-              <th style={{ textAlign: "left" }}>{dictionary.members.status}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((member) => (
-              <tr key={member.id}>
-                <td>{member.fullName}</td>
-                <td>{member.email}</td>
-                <td>
-                  {member.role === "ADMIN" ? dictionary.members.roleAdmin : dictionary.members.roleMember}
-                </td>
-                <td>
-                  {pickBilingual(
-                    { bg: member.qualificationBg, en: member.qualificationEn },
-                    locale,
-                  )}
-                </td>
-                <td>
-                  <Badge variant={member.isActive ? "success" : "muted"}>
-                    {member.isActive ? dictionary.members.active : dictionary.members.inactive}
-                  </Badge>
-                </td>
-                <td style={{ display: "flex", gap: "0.5rem" }}>
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    onClick={() => {
-                      setEditing(member);
-                      setEditForm({
-                        email: member.email,
-                        fullName: member.fullName,
-                        qualificationBg: member.qualificationBg,
-                        qualificationEn: member.qualificationEn,
-                        role: member.role,
-                        temporaryPassword: "",
-                      });
-                    }}
-                  >
-                    {dictionary.members.edit}
-                  </Button>
-                  {member.isActive ? (
-                    <Button
-                      variant="danger"
-                      size="small"
-                      disabled={member.id === user.id}
-                      title={member.id === user.id ? dictionary.members.cannotDeactivateSelf : undefined}
-                      onClick={() => setConfirmingDeactivate(member)}
-                    >
-                      {dictionary.members.deactivate}
-                    </Button>
-                  ) : (
-                    <Button variant="secondary" size="small" onClick={() => void handleActivate(member)}>
-                      {dictionary.members.activate}
-                    </Button>
-                  )}
-                </td>
+        <div className="dho-table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>{dictionary.members.fullName}</th>
+                <th>{dictionary.members.email}</th>
+                <th>{dictionary.members.role}</th>
+                <th>{dictionary.members.qualificationEn}</th>
+                <th>{dictionary.members.status}</th>
+                <th />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {members.map((member) => (
+                <tr key={member.id} style={member.isActive ? undefined : { opacity: 0.6 }}>
+                  <td>{member.fullName}</td>
+                  <td>{member.email}</td>
+                  <td>
+                    {member.role === "ADMIN" ? dictionary.members.roleAdmin : dictionary.members.roleMember}
+                  </td>
+                  <td>
+                    {pickBilingual(
+                      { bg: member.qualificationBg, en: member.qualificationEn },
+                      locale,
+                    )}
+                  </td>
+                  <td>
+                    <Badge variant={member.isActive ? "success" : "muted"}>
+                      {member.isActive ? dictionary.members.active : dictionary.members.inactive}
+                    </Badge>
+                  </td>
+                  <td>
+                    <div className="dho-row" style={{ gap: "0.5rem" }}>
+                      <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={() => {
+                          setEditing(member);
+                          setEditForm({
+                            email: member.email,
+                            fullName: member.fullName,
+                            qualificationBg: member.qualificationBg,
+                            qualificationEn: member.qualificationEn,
+                            role: member.role,
+                            temporaryPassword: "",
+                          });
+                        }}
+                      >
+                        {dictionary.members.edit}
+                      </Button>
+                      {member.isActive ? (
+                        <Button
+                          variant="danger"
+                          size="small"
+                          disabled={member.id === user.id}
+                          title={member.id === user.id ? dictionary.members.cannotDeactivateSelf : undefined}
+                          onClick={() => setConfirmingDeactivate(member)}
+                        >
+                          {dictionary.members.deactivate}
+                        </Button>
+                      ) : (
+                        <Button variant="secondary" size="small" onClick={() => void handleActivate(member)}>
+                          {dictionary.members.activate}
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <p>{dictionary.common.loading}</p>
       )}
 
-      <Modal open={creating} onClose={() => setCreating(false)} title={dictionary.members.newMember}>
-        <form onSubmit={handleCreate}>
+      <Modal
+        open={creating}
+        onClose={() => setCreating(false)}
+        title={dictionary.members.newMember}
+        closeLabel={dictionary.common.close}
+      >
+        <form onSubmit={handleCreate} className="dho-stack">
           <FormField
             label={dictionary.members.fullName}
             value={createForm.fullName}
@@ -256,22 +267,24 @@ export default function MembersPage() {
             error={createEmailError ?? undefined}
             required
           />
-          <FormField
-            label={dictionary.members.qualificationBg}
-            value={createForm.qualificationBg}
-            onChange={(event) =>
-              setCreateForm((prev) => ({ ...prev, qualificationBg: event.target.value }))
-            }
-            required
-          />
-          <FormField
-            label={dictionary.members.qualificationEn}
-            value={createForm.qualificationEn}
-            onChange={(event) =>
-              setCreateForm((prev) => ({ ...prev, qualificationEn: event.target.value }))
-            }
-            required
-          />
+          <div className="dho-field-pair">
+            <FormField
+              label={dictionary.members.qualificationBg}
+              value={createForm.qualificationBg}
+              onChange={(event) =>
+                setCreateForm((prev) => ({ ...prev, qualificationBg: event.target.value }))
+              }
+              required
+            />
+            <FormField
+              label={dictionary.members.qualificationEn}
+              value={createForm.qualificationEn}
+              onChange={(event) =>
+                setCreateForm((prev) => ({ ...prev, qualificationEn: event.target.value }))
+              }
+              required
+            />
+          </div>
           <FormField
             label={dictionary.members.temporaryPassword}
             type="text"
@@ -297,20 +310,29 @@ export default function MembersPage() {
               <option value="ADMIN">{dictionary.members.roleAdmin}</option>
             </select>
           </div>
-          {createError ? <p role="alert">{createError}</p> : null}
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-            <Button type="submit" disabled={saving}>
-              {saving ? dictionary.members.creating : dictionary.members.create}
-            </Button>
+          {createError ? (
+            <p role="alert" className="dho-field-error">
+              {createError}
+            </p>
+          ) : null}
+          <div className="dho-modal-actions">
             <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
               {dictionary.members.cancel}
+            </Button>
+            <Button type="submit" variant="accent" disabled={saving}>
+              {saving ? dictionary.members.creating : dictionary.members.create}
             </Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={editing !== null} onClose={() => setEditing(null)} title={editing?.fullName ?? ""}>
-        <form onSubmit={handleEdit}>
+      <Modal
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        title={editing?.fullName ?? ""}
+        closeLabel={dictionary.common.close}
+      >
+        <form onSubmit={handleEdit} className="dho-stack">
           <FormField
             label={dictionary.members.fullName}
             value={editForm.fullName}
@@ -325,18 +347,20 @@ export default function MembersPage() {
             error={editEmailError ?? undefined}
             required
           />
-          <FormField
-            label={dictionary.members.qualificationBg}
-            value={editForm.qualificationBg}
-            onChange={(event) => setEditForm((prev) => ({ ...prev, qualificationBg: event.target.value }))}
-            required
-          />
-          <FormField
-            label={dictionary.members.qualificationEn}
-            value={editForm.qualificationEn}
-            onChange={(event) => setEditForm((prev) => ({ ...prev, qualificationEn: event.target.value }))}
-            required
-          />
+          <div className="dho-field-pair">
+            <FormField
+              label={dictionary.members.qualificationBg}
+              value={editForm.qualificationBg}
+              onChange={(event) => setEditForm((prev) => ({ ...prev, qualificationBg: event.target.value }))}
+              required
+            />
+            <FormField
+              label={dictionary.members.qualificationEn}
+              value={editForm.qualificationEn}
+              onChange={(event) => setEditForm((prev) => ({ ...prev, qualificationEn: event.target.value }))}
+              required
+            />
+          </div>
           <div className="dho-field">
             <label htmlFor="editRole">{dictionary.members.role}</label>
             <select
@@ -349,13 +373,17 @@ export default function MembersPage() {
               <option value="ADMIN">{dictionary.members.roleAdmin}</option>
             </select>
           </div>
-          {editError ? <p role="alert">{editError}</p> : null}
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-            <Button type="submit" disabled={saving}>
-              {saving ? dictionary.members.saving : dictionary.members.saveChanges}
-            </Button>
+          {editError ? (
+            <p role="alert" className="dho-field-error">
+              {editError}
+            </p>
+          ) : null}
+          <div className="dho-modal-actions">
             <Button type="button" variant="secondary" onClick={() => setEditing(null)}>
               {dictionary.members.cancel}
+            </Button>
+            <Button type="submit" variant="accent" disabled={saving}>
+              {saving ? dictionary.members.saving : dictionary.members.saveChanges}
             </Button>
           </div>
         </form>
@@ -365,14 +393,15 @@ export default function MembersPage() {
         open={confirmingDeactivate !== null}
         onClose={() => setConfirmingDeactivate(null)}
         title={dictionary.members.confirmDeactivateTitle}
+        closeLabel={dictionary.common.close}
       >
         <p>{dictionary.members.confirmDeactivateBody}</p>
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-          <Button variant="danger" onClick={() => void handleConfirmDeactivate()}>
-            {dictionary.common.confirm}
-          </Button>
+        <div className="dho-modal-actions">
           <Button variant="secondary" onClick={() => setConfirmingDeactivate(null)}>
             {dictionary.members.cancel}
+          </Button>
+          <Button variant="danger" onClick={() => void handleConfirmDeactivate()}>
+            {dictionary.common.confirm}
           </Button>
         </div>
       </Modal>

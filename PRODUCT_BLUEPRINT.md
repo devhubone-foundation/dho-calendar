@@ -3,11 +3,12 @@
 ## Document status
 
 - **Document:** Product Blueprint
-- **Version:** 1.0
+- **Version:** 1.1
 - **Status:** Approved product source of truth
 - **Product:** DevHubOne Office Calendar
 - **Primary audience:** Product owner, developers, Claude Code planning agents, implementation agents, reviewers, and testers
 - **Repository role:** This file is the authoritative product-level source of truth for the project
+- **Change history:** v1.1 (2026-07-22) — Version 1 scope change per §33: the public calendar's view model is replaced by exactly two query-param-selected views (Attendance, Events); see §15.1. The authenticated calendar's four-view model (§15.2) is unchanged. Approved by the product owner alongside Issue #12.
 
 ---
 
@@ -746,16 +747,38 @@ The UI must still display them clearly.
 
 ## 15. Calendar views
 
-The public and authenticated calendar must support all of the following views:
+### 15.1 Public calendar views (Version 1.1)
+
+The public calendar (§6.1) supports exactly **two** views, selected only through the `view` query parameter. No visible view-switching control is shown on the public calendar; a visitor cannot switch views by clicking a button.
+
+Invalid or missing `view` values fall back to `attendance`.
+
+#### 15.1.1 Attendance view (`view=attendance`, default)
+
+- Shows exactly the next 7 calendar days starting from today (a rolling window). It never shows past days and has no navigation controls — there is nothing to page through.
+- For each of the 7 days, every member with `Attending` or `Not sure` status for that day is listed with their profile picture and a time-positioned attendance-hours indicator spanning their expected start/end time. `Not sure` members remain visually distinct from confirmed members (§12.3); this is unconditional and applies even though the view is otherwise attendance-only.
+- A day with the office effectively closed shows "Office closed" (bilingual).
+- A day with the office effectively open but no confirmed or uncertain attendees shows "Rest day" (EN "Rest Day", BG "Почивка") instead of an empty list.
+- Date-specific changed office hours remain visually distinguished (§17).
+- No events are shown in this view.
+- Days are not clickable and no day-details modal (§16) opens from this view — all relevant information for the visible range is already shown without interaction, which is the view's purpose.
+
+#### 15.1.2 Events view (`view=events`)
+
+- A Month calendar grid, navigated only by previous/next-month icon controls (not a view switcher).
+- Shows only public events. Office open/closed state and attendance are not shown in this view.
+- Clicking or activating a day opens the day-details modal (§16) for that date, showing that date's events. The modal does not include office/attendance information in this view.
+
+### 15.2 Authenticated calendar views
+
+The authenticated calendar (§6.2, §18) is unaffected by §15.1 and continues to support all of the following views, switched using visible controls:
 
 - Month
 - Week
 - Day
 - Upcoming/List
 
-Users switch between views using visible controls.
-
-## 15.1 Month view
+#### 15.2.1 Month view
 
 The Month view must provide a compact overview of:
 
@@ -767,7 +790,7 @@ The Month view must provide a compact overview of:
 
 It must remain readable inside the iframe.
 
-## 15.2 Week view
+#### 15.2.2 Week view
 
 The Week view must show time-based detail for:
 
@@ -775,17 +798,17 @@ The Week view must show time-based detail for:
 - member attendance intervals;
 - events and their durations.
 
-## 15.3 Day view
+#### 15.2.3 Day view
 
 The Day view must provide detailed chronological information for one selected date.
 
-## 15.4 Upcoming/List view
+#### 15.2.4 Upcoming/List view
 
 The Upcoming/List view must prioritize future public events and office availability in chronological order.
 
 The exact grouping and range are UX decisions, but the view must be useful on narrow iframe widths.
 
-## 15.5 View state
+#### 15.2.5 View state
 
 The selected view does not need to persist across visits.
 
@@ -795,7 +818,7 @@ A default view must be selected during UX design and documented before implement
 
 ## 16. Day details modal
 
-Clicking or activating a date must open a modal containing relevant information for that day.
+Clicking or activating a date must open a modal containing relevant information for that day. This applies to the public calendar's Events view (§15.1.2) and to the authenticated calendar (§15.2). It does not apply to the public calendar's Attendance view (§15.1.1), which is intentionally non-interactive.
 
 The modal may include:
 
@@ -1086,7 +1109,7 @@ The following rules are authoritative:
 28. Audit history is Admin-only.
 29. Audit retention is seven days.
 30. The public calendar is embeddable by iframe and automatically resizes.
-31. The product supports Month, Week, Day, and Upcoming/List views.
+31. The public calendar supports exactly two query-param-selected views — Attendance (rolling next-7-days, attendance-only, non-interactive) and Events (month grid, events-only, clickable) — with no view-switch buttons; the authenticated calendar supports Month, Week, Day, and Upcoming/List views with visible switch controls.
 32. Clicking a date opens a details modal.
 33. Events are visually more prominent than attendance information.
 34. Bulgarian and English are supported on public and authenticated surfaces.
@@ -1281,7 +1304,7 @@ Version 1 is successful when all of the following are true:
 19. Events support hourly, full-day, multi-day, and recurring cases.
 20. Recurring edits support all three required scopes.
 21. Events remain visible even when the office is otherwise closed.
-22. Public Month, Week, Day, and Upcoming/List views work.
+22. The public calendar's Attendance view (`?view=attendance`, default) and Events view (`?view=events`) both work; the authenticated calendar's Month, Week, Day, and Upcoming/List views work.
 23. Date selection opens the required modal.
 24. The iframe receives the selected language.
 25. The iframe automatically resizes.
@@ -1359,7 +1382,7 @@ The following are intentionally unresolved and must be decided before their rela
 6. Whether event cover images are required or optional.
 7. Exact event recurrence options and recurrence representation.
 8. Attendance behavior when entered times fall outside office hours.
-9. Default public calendar view.
+9. ~~Default public calendar view.~~ Resolved in v1.1 (§15.1): the public calendar has exactly two views (`attendance`, `events`); default is `attendance`.
 10. Admin warning look-ahead period.
 11. Exact audit cleanup scheduling mechanism.
 12. Concurrency-control behavior for collaborative event editing.

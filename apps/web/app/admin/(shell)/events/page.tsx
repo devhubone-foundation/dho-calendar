@@ -269,21 +269,30 @@ export default function EventsPage() {
   const allowRecurrenceEdit = formMode === "create" || formMode === "series";
 
   return (
-    <>
+    <div className="dho-stack">
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+        <div className="dho-page-header">
           <h1>{dictionary.events.title}</h1>
-          <Button onClick={openCreateForm}>{dictionary.events.newEvent}</Button>
+          <Button variant="accent" onClick={openCreateForm}>
+            {dictionary.events.newEvent}
+          </Button>
         </div>
         <p>{dictionary.events.publicNotice}</p>
 
         {loadError ? <p role="alert">{loadError}</p> : null}
 
         {!occurrences ? <p>{dictionary.common.loading}</p> : null}
-        {occurrences && occurrences.length === 0 ? <p>{dictionary.events.noEvents}</p> : null}
+        {occurrences && occurrences.length === 0 ? (
+          <div className="dho-empty-state">
+            <span className="dho-empty-state-icon" aria-hidden="true">
+              🗓️
+            </span>
+            <p>{dictionary.events.noEvents}</p>
+          </div>
+        ) : null}
 
         {occurrences && occurrences.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div className="dho-stack">
             {occurrences.map((occurrence) => {
               const title = pickBilingual({ bg: occurrence.titleBg, en: occurrence.titleEn }, locale);
               const timeLabel = occurrence.isAllDay
@@ -291,20 +300,17 @@ export default function EventsPage() {
                 : `${formatEventTime(occurrence.startAt, locale)}–${formatEventTime(occurrence.endAt, locale)}`;
 
               return (
-                <div
-                  key={`${occurrence.seriesId}-${occurrence.occurrenceDate}`}
-                  style={{ display: "flex", gap: "1rem", borderBottom: "1px solid var(--dho-color-paper)", paddingBottom: "1rem" }}
-                >
+                <div key={`${occurrence.seriesId}-${occurrence.occurrenceDate}`} className="dho-cal-event-detail">
                   <EventCoverImage coverImagePath={occurrence.coverImagePath} alt={title} className="dho-cal-event-detail-cover" />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-                      <h3 style={{ margin: 0 }}>{title}</h3>
+                  <div className="dho-stack" style={{ flex: 1, gap: "0.5rem" }}>
+                    <div className="dho-cal-event-detail-heading">
+                      <h3>{title}</h3>
                       {occurrence.isRecurring ? <Badge variant="muted">{dictionary.events.recurringBadge}</Badge> : null}
                     </div>
-                    <p>
+                    <p className="dho-cal-event-detail-meta">
                       {formatEventDate(occurrence.occurrenceDate, locale)} · {timeLabel} · {occurrence.location}
                     </p>
-                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <div className="dho-row">
                       <Button variant="secondary" size="small" onClick={() => startEdit(occurrence)}>
                         {dictionary.events.edit}
                       </Button>
@@ -341,7 +347,9 @@ export default function EventsPage() {
                       ) : null}
                     </div>
                     {coverError?.seriesId === occurrence.seriesId ? (
-                      <p role="alert">{coverError.message}</p>
+                      <p role="alert" className="dho-field-error">
+                        {coverError.message}
+                      </p>
                     ) : null}
                   </div>
                 </div>
@@ -367,6 +375,7 @@ export default function EventsPage() {
 
       <RecurrenceScopeDialog
         open={scopePrompt !== null}
+        isDestructive={scopePrompt?.action === "delete"}
         onCancel={() => setScopePrompt(null)}
         onConfirm={handleScopeConfirm}
       />
@@ -375,16 +384,17 @@ export default function EventsPage() {
         open={deleteConfirm !== null}
         onClose={() => setDeleteConfirm(null)}
         title={dictionary.events.confirmDeleteTitle}
+        closeLabel={dictionary.common.close}
       >
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-          <Button variant="danger" onClick={() => void confirmDelete()}>
-            {dictionary.events.delete}
-          </Button>
+        <div className="dho-modal-actions">
           <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
             {dictionary.events.cancel}
           </Button>
+          <Button variant="danger" onClick={() => void confirmDelete()}>
+            {dictionary.events.delete}
+          </Button>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }

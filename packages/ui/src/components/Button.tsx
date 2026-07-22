@@ -2,7 +2,7 @@ import { type ButtonHTMLAttributes, forwardRef } from "react";
 
 import { cn } from "../lib/cn";
 
-export type ButtonVariant = "primary" | "secondary" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "danger" | "accent";
 export type ButtonSize = "default" | "small";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -22,6 +22,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         "dho-button",
         variant === "secondary" && "dho-button--secondary",
         variant === "danger" && "dho-button--danger",
+        variant === "accent" && "dho-button--accent",
         size === "small" && "dho-button--small",
         className,
       )}

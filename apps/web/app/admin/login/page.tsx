@@ -32,35 +32,45 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="dho-shell-main">
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+    <div className="dho-auth-page">
+      <div className="dho-auth-topbar">
         <LocaleSwitcher />
       </div>
-      <Card style={{ maxWidth: "24rem", margin: "0 auto" }}>
-        <h1>{dictionary.auth.login.title}</h1>
-        <form onSubmit={handleSubmit}>
-          <FormField
-            label={dictionary.auth.login.email}
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-          <FormField
-            label={dictionary.auth.login.password}
-            id="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-          {error ? <p role="alert">{error}</p> : null}
-          <Button type="submit" disabled={submitting}>
-            {submitting ? dictionary.auth.login.submitting : dictionary.auth.login.submit}
-          </Button>
-        </form>
-      </Card>
-    </main>
+      <div className="dho-auth-layout">
+        <aside className="dho-auth-brand-panel">
+          <h2>{dictionary.nav.brandName}</h2>
+          <p>{dictionary.auth.brandTagline}</p>
+        </aside>
+        <Card className="dho-auth-card">
+          <h1>{dictionary.auth.login.title}</h1>
+          <form onSubmit={handleSubmit} className="dho-stack">
+            <FormField
+              label={dictionary.auth.login.email}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+            <FormField
+              label={dictionary.auth.login.password}
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+            {error ? (
+              <p role="alert" className="dho-field-error">
+                {error}
+              </p>
+            ) : null}
+            <Button type="submit" variant="accent" disabled={submitting}>
+              {submitting ? dictionary.auth.login.submitting : dictionary.auth.login.submit}
+            </Button>
+          </form>
+        </Card>
+      </div>
+    </div>
   );
 }

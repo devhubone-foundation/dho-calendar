@@ -103,16 +103,16 @@ export default function ProfilePage() {
   }
 
   return (
-    <Card style={{ maxWidth: "32rem" }}>
+    <Card style={{ maxWidth: "36rem" }} className="dho-stack">
       <h1>{dictionary.profile.title}</h1>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div className="dho-row">
         <Avatar
           name={profile.fullName}
           src={profile.profileImagePath ? resolveUploadUrl(profile.profileImagePath) : null}
           size={72}
         />
-        <div>
+        <div className="dho-stack" style={{ gap: "0.25rem" }}>
           <input
             ref={fileInputRef}
             type="file"
@@ -123,11 +123,15 @@ export default function ProfilePage() {
           />
           {uploading ? <p>{dictionary.profile.uploading}</p> : null}
           {pictureMessage ? <p>{pictureMessage}</p> : null}
-          {pictureError ? <p role="alert">{pictureError}</p> : null}
+          {pictureError ? (
+            <p role="alert" className="dho-field-error">
+              {pictureError}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="dho-stack">
         <FormField
           label={dictionary.profile.fullName}
           id="fullName"
@@ -145,23 +149,29 @@ export default function ProfilePage() {
           error={emailError ?? undefined}
           required
         />
-        <FormField
-          label={dictionary.profile.qualificationBg}
-          id="qualificationBg"
-          value={qualificationBg}
-          onChange={(event) => setQualificationBg(event.target.value)}
-          required
-        />
-        <FormField
-          label={dictionary.profile.qualificationEn}
-          id="qualificationEn"
-          value={qualificationEn}
-          onChange={(event) => setQualificationEn(event.target.value)}
-          required
-        />
+        <div className="dho-field-pair">
+          <FormField
+            label={dictionary.profile.qualificationBg}
+            id="qualificationBg"
+            value={qualificationBg}
+            onChange={(event) => setQualificationBg(event.target.value)}
+            required
+          />
+          <FormField
+            label={dictionary.profile.qualificationEn}
+            id="qualificationEn"
+            value={qualificationEn}
+            onChange={(event) => setQualificationEn(event.target.value)}
+            required
+          />
+        </div>
         {saveMessage ? <p>{saveMessage}</p> : null}
-        {saveError ? <p role="alert">{saveError}</p> : null}
-        <Button type="submit" disabled={saving}>
+        {saveError ? (
+          <p role="alert" className="dho-field-error">
+            {saveError}
+          </p>
+        ) : null}
+        <Button type="submit" variant="accent" disabled={saving}>
           {saving ? dictionary.profile.saving : dictionary.profile.save}
         </Button>
       </form>

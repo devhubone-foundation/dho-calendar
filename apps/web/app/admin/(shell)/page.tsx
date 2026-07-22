@@ -28,7 +28,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <>
+    <div className="dho-stack">
       <Card>
         <h1>{dictionary.dashboard.title}</h1>
         <p>
@@ -39,7 +39,7 @@ export default function AdminDashboardPage() {
       </Card>
 
       {user.role === "ADMIN" ? (
-        <Card style={{ marginTop: "1.5rem" }}>
+        <Card>
           <h2>{dictionary.dashboard.warningsTitle}</h2>
 
           {warningsError ? <p role="alert">{warningsError}</p> : null}
@@ -49,10 +49,10 @@ export default function AdminDashboardPage() {
           {warnings && warnings.length === 0 ? <p>{dictionary.dashboard.noWarnings}</p> : null}
 
           {warnings && warnings.length > 0 ? (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <ul className="dho-stack" style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {warnings.map((warning) => (
-                <li key={warning.date} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <Badge variant="danger">{warning.date}</Badge>
+                <li key={warning.date} className="dho-row">
+                  <Badge variant="warning">{warning.date}</Badge>
                   <span>
                     {warning.reason === "NO_RECORDS"
                       ? dictionary.dashboard.warningReasonNoRecords
@@ -65,6 +65,6 @@ export default function AdminDashboardPage() {
           ) : null}
         </Card>
       ) : null}
-    </>
+    </div>
   );
 }

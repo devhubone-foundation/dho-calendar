@@ -56,68 +56,74 @@ export function EventFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onCancel} title={title}>
-      <form onSubmit={handleSubmit}>
+    <Modal open={open} onClose={onCancel} title={title} closeLabel={dictionary.common.close}>
+      <form onSubmit={handleSubmit} className="dho-stack">
         <p>{dictionary.events.publicNotice}</p>
 
-        <FormField
-          label={dictionary.events.titleBg}
-          value={values.titleBg}
-          onChange={(event) => update({ titleBg: event.target.value })}
-          required
-        />
-        <FormField
-          label={dictionary.events.titleEn}
-          value={values.titleEn}
-          onChange={(event) => update({ titleEn: event.target.value })}
-          required
-        />
-
-        <div className="dho-field">
-          <label htmlFor="event-description-bg">{dictionary.events.descriptionBg}</label>
-          <textarea
-            id="event-description-bg"
-            className="dho-input"
-            rows={3}
-            value={values.descriptionBg}
-            onChange={(event) => update({ descriptionBg: event.target.value })}
+        <div className="dho-field-pair">
+          <FormField
+            label={dictionary.events.titleBg}
+            value={values.titleBg}
+            onChange={(event) => update({ titleBg: event.target.value })}
+            required
           />
-        </div>
-        <div className="dho-field">
-          <label htmlFor="event-description-en">{dictionary.events.descriptionEn}</label>
-          <textarea
-            id="event-description-en"
-            className="dho-input"
-            rows={3}
-            value={values.descriptionEn}
-            onChange={(event) => update({ descriptionEn: event.target.value })}
+          <FormField
+            label={dictionary.events.titleEn}
+            value={values.titleEn}
+            onChange={(event) => update({ titleEn: event.target.value })}
+            required
           />
         </div>
 
-        <div className="dho-field">
-          <label htmlFor="event-all-day">{dictionary.events.isAllDay}</label>
+        <div className="dho-field-pair">
+          <div className="dho-field">
+            <label htmlFor="event-description-bg">{dictionary.events.descriptionBg}</label>
+            <textarea
+              id="event-description-bg"
+              className="dho-input"
+              rows={3}
+              value={values.descriptionBg}
+              onChange={(event) => update({ descriptionBg: event.target.value })}
+            />
+          </div>
+          <div className="dho-field">
+            <label htmlFor="event-description-en">{dictionary.events.descriptionEn}</label>
+            <textarea
+              id="event-description-en"
+              className="dho-input"
+              rows={3}
+              value={values.descriptionEn}
+              onChange={(event) => update({ descriptionEn: event.target.value })}
+            />
+          </div>
+        </div>
+
+        <label className="dho-checkbox-row" htmlFor="event-all-day">
           <input
             id="event-all-day"
             type="checkbox"
             checked={values.isAllDay}
             onChange={(event) => update({ isAllDay: event.target.checked })}
           />
-        </div>
+          {dictionary.events.isAllDay}
+        </label>
 
-        <FormField
-          label={dictionary.events.startAt}
-          type={values.isAllDay ? "date" : "datetime-local"}
-          value={values.startAt}
-          onChange={(event) => update({ startAt: event.target.value })}
-          required
-        />
-        <FormField
-          label={dictionary.events.endAt}
-          type={values.isAllDay ? "date" : "datetime-local"}
-          value={values.endAt}
-          onChange={(event) => update({ endAt: event.target.value })}
-          required
-        />
+        <div className="dho-field-pair">
+          <FormField
+            label={dictionary.events.startAt}
+            type={values.isAllDay ? "date" : "datetime-local"}
+            value={values.startAt}
+            onChange={(event) => update({ startAt: event.target.value })}
+            required
+          />
+          <FormField
+            label={dictionary.events.endAt}
+            type={values.isAllDay ? "date" : "datetime-local"}
+            value={values.endAt}
+            onChange={(event) => update({ endAt: event.target.value })}
+            required
+          />
+        </div>
 
         <FormField
           label={dictionary.events.location}
@@ -145,9 +151,9 @@ export function EventFormModal({
           <>
             <div className="dho-field">
               <span>{dictionary.events.onWeekdays}</span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+              <div className="dho-checkbox-group">
                 {WEEKDAYS_IN_ORDER.map((weekday) => (
-                  <label key={weekday} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                  <label key={weekday} className="dho-checkbox-row">
                     <input
                       type="checkbox"
                       checked={values.byWeekdays.includes(weekday)}
@@ -161,8 +167,8 @@ export function EventFormModal({
 
             <div className="dho-field">
               <span>{dictionary.events.endCondition}</span>
-              <div style={{ display: "flex", gap: "1rem" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+              <div className="dho-checkbox-group">
+                <label className="dho-checkbox-row">
                   <input
                     type="radio"
                     name="event-end-type"
@@ -171,7 +177,7 @@ export function EventFormModal({
                   />
                   {dictionary.events.endAfterCount}
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                <label className="dho-checkbox-row">
                   <input
                     type="radio"
                     name="event-end-type"
@@ -203,14 +209,18 @@ export function EventFormModal({
           </>
         ) : null}
 
-        {error ? <p role="alert">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="dho-field-error">
+            {error}
+          </p>
+        ) : null}
 
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? submittingLabel : submitLabel}
-          </Button>
+        <div className="dho-modal-actions">
           <Button type="button" variant="secondary" onClick={onCancel}>
             {dictionary.events.cancel}
+          </Button>
+          <Button type="submit" variant="accent" disabled={submitting}>
+            {submitting ? submittingLabel : submitLabel}
           </Button>
         </div>
       </form>

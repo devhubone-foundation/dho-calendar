@@ -5,61 +5,49 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { PublicCalendarResponse } from "@dho/contracts";
 
-import { DayDetailsModal, type PublicDayInfo } from "../components/calendar/DayDetailsModal";
-import { DayView } from "../components/calendar/DayView";
+import { AttendanceTimelineView } from "../components/calendar/AttendanceTimelineView";
+import { DayDetailsModal } from "../components/calendar/DayDetailsModal";
 import { MonthView } from "../components/calendar/MonthView";
-import { UpcomingView } from "../components/calendar/UpcomingView";
-import { ViewSwitcher, type CalendarViewKind } from "../components/calendar/ViewSwitcher";
-import { WeekView } from "../components/calendar/WeekView";
-import {
-  addDaysToKey,
-  addMonthsToKey,
-  getMonthGridDates,
-  getWeekDates,
-  todayKey,
-  yearMonthOfKey,
-} from "../lib/calendar-grid";
-import { defaultHorizonRange } from "../lib/date-range";
-import { formatEventDate, formatMonthLabel } from "../lib/event-format";
+import { addDaysToKey, addMonthsToKey, getMonthGridDates, todayKey, yearMonthOfKey } from "../lib/calendar-grid";
+import { formatMonthLabel } from "../lib/event-format";
 import { useIframeResize } from "../lib/iframe/resize";
 import { LocaleSwitcher } from "../lib/i18n/LocaleSwitcher";
 import { useDictionary, useLocale } from "../lib/i18n/use-locale";
 import { getPublicCalendar } from "../lib/public-calendar/api-client";
 import { useRealtimeInvalidation } from "../lib/realtime/socket-client";
 
-// PRODUCT_BLUEPRINT.md §21.1/ARCHITECTURE.md §14: `?view=` accepts
-// month|week|day|list — "list" maps onto the shared `CalendarViewKind`'s
-// "upcoming" internal name (ViewSwitcher.tsx), which the rest of the
-// calendar UI already uses. Missing/invalid values default to "week"
-// (documented default per Issue #5).
-const VIEW_PARAM_TO_KIND: Record<string, CalendarViewKind> = {
-  month: "month",
-  week: "week",
-  day: "day",
-  list: "upcoming",
-};
+/**
+ * PRODUCT_BLUEPRINT.md §15.1 (v1.1): the public calendar has exactly two
+ * views, selected only through `?view=`. There is no visible switcher —
+ * embedding sites pick the view by iframe URL. Invalid/missing values fall
+ * back to "attendance".
+ */
+type PublicView = "attendance" | "events";
 
-function resolveView(value: string | null): CalendarViewKind {
-  if (value && value in VIEW_PARAM_TO_KIND) {
-    return VIEW_PARAM_TO_KIND[value] as CalendarViewKind;
-  }
-  return "week";
+function resolveView(value: string | null): PublicView {
+  return value === "events" ? "events" : "attendance";
 }
 
-function visibleRangeFor(view: CalendarViewKind, anchorDate: string): { from: string; to: string } {
-  if (view === "month") {
-    const { year, month } = yearMonthOfKey(anchorDate);
-    const dates = getMonthGridDates(year, month);
-    return { from: dates[0] as string, to: dates[dates.length - 1] as string };
-  }
-  if (view === "week") {
-    const dates = getWeekDates(anchorDate);
-    return { from: dates[0] as string, to: dates[6] as string };
-  }
-  if (view === "day") {
-    return { from: anchorDate, to: anchorDate };
-  }
-  return defaultHorizonRange();
+/** Next 7 days starting today (never past days) — §15.1.1. */
+function nextSevenDayRange(): { from: string; to: string } {
+  const from = todayKey();
+  return { from, to: addDaysToKey(from, 6) };
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 export default function PublicCalendarPage() {
@@ -68,8 +56,8 @@ export default function PublicCalendarPage() {
   const searchParams = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [view, setView] = useState<CalendarViewKind>(() => resolveView(searchParams.get("view")));
-  const [anchorDate, setAnchorDate] = useState(todayKey());
+  const view = resolveView(searchParams.get("view"));
+  const [monthAnchor, setMonthAnchor] = useState(todayKey());
   const [calendarData, setCalendarData] = useState<PublicCalendarResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -79,8 +67,16 @@ export default function PublicCalendarPage() {
   const handleInvalidate = useCallback(() => setRefreshTick((tick) => tick + 1), []);
   useRealtimeInvalidation(handleInvalidate);
 
+  const { year, month } = yearMonthOfKey(monthAnchor);
+  const range =
+    view === "attendance"
+      ? nextSevenDayRange()
+      : (() => {
+          const dates = getMonthGridDates(year, month);
+          return { from: dates[0] as string, to: dates[dates.length - 1] as string };
+        })();
+
   useEffect(() => {
-    const range = visibleRangeFor(view, anchorDate);
     getPublicCalendar(range)
       .then((result) => {
         setCalendarData(result);
@@ -90,109 +86,84 @@ export default function PublicCalendarPage() {
         setLoadError(err instanceof Error ? err.message : dictionary.calendar.genericLoadError);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, anchorDate, refreshTick]);
+  }, [view, range.from, range.to, refreshTick]);
 
   const occurrences = calendarData?.events ?? null;
-  const officeOpenDates = calendarData
-    ? new Set(calendarData.days.filter((day) => day.isPublicOpenDay).map((day) => day.date))
-    : undefined;
-  const selectedDay = calendarData?.days.find((day) => day.date === selectedDate);
-  const publicDayInfo: PublicDayInfo | undefined = selectedDay
-    ? {
-        office: selectedDay.office,
-        confirmedAttendees: selectedDay.confirmedAttendees,
-        uncertainAttendees: selectedDay.uncertainAttendees,
-      }
-    : undefined;
 
-  useIframeResize(containerRef, [view, anchorDate, modalOpen, calendarData]);
+  useIframeResize(containerRef, [view, monthAnchor, modalOpen, calendarData]);
 
   function openDayModal(dateKey: string): void {
     setSelectedDate(dateKey);
     setModalOpen(true);
   }
 
-  function goToday(): void {
-    setAnchorDate(todayKey());
-  }
-
-  function goPrevious(): void {
-    if (view === "month") setAnchorDate(addMonthsToKey(anchorDate, -1));
-    else if (view === "week") setAnchorDate(addDaysToKey(anchorDate, -7));
-    else if (view === "day") setAnchorDate(addDaysToKey(anchorDate, -1));
-  }
-
-  function goNext(): void {
-    if (view === "month") setAnchorDate(addMonthsToKey(anchorDate, 1));
-    else if (view === "week") setAnchorDate(addDaysToKey(anchorDate, 7));
-    else if (view === "day") setAnchorDate(addDaysToKey(anchorDate, 1));
-  }
-
-  const { year, month } = yearMonthOfKey(anchorDate);
-  const weekDates = getWeekDates(anchorDate);
-  const headerLabel =
-    view === "month"
-      ? formatMonthLabel(year, month, locale)
-      : view === "week"
-        ? `${formatEventDate(weekDates[0] as string, locale)} – ${formatEventDate(weekDates[6] as string, locale)}`
-        : view === "day"
-          ? formatEventDate(anchorDate, locale)
-          : null;
+  const heading =
+    view === "attendance"
+      ? { title: dictionary.calendar.attendanceViewTitle, subtitle: dictionary.calendar.attendanceViewSubtitle }
+      : { title: dictionary.calendar.eventsViewTitle, subtitle: dictionary.publicPage.subtitle };
 
   return (
-    <main className="dho-shell-main" ref={containerRef}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+    <div className="dho-public-page" ref={containerRef}>
+      <header className="dho-public-topbar">
+        <span className="dho-public-brand">{dictionary.nav.brandName}</span>
         <LocaleSwitcher />
-      </div>
-      <Card>
-        <h1>{dictionary.publicPage.title}</h1>
-        <p>{dictionary.publicPage.subtitle}</p>
+      </header>
 
-        <ViewSwitcher view={view} onChange={setView} />
-
-        {view !== "upcoming" ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-            <Button variant="secondary" size="small" onClick={goPrevious}>
-              {dictionary.calendar.previous}
-            </Button>
-            <Button variant="secondary" size="small" onClick={goToday}>
-              {dictionary.calendar.today}
-            </Button>
-            <Button variant="secondary" size="small" onClick={goNext}>
-              {dictionary.calendar.next}
-            </Button>
-            <strong>{headerLabel}</strong>
+      <main className="dho-shell-main">
+        <Card>
+          <div className="dho-page-header">
+            <div>
+              <h1>{heading.title}</h1>
+              <p>{heading.subtitle}</p>
+            </div>
           </div>
-        ) : null}
 
-        {loadError ? <p role="alert">{loadError}</p> : null}
-        {!occurrences ? <p>{dictionary.common.loading}</p> : null}
+          {view === "events" ? (
+            <div className="dho-cal-month-nav-row">
+              <Button
+                variant="secondary"
+                size="small"
+                className="dho-cal-icon-button"
+                aria-label={dictionary.calendar.previous}
+                onClick={() => setMonthAnchor((anchor) => addMonthsToKey(anchor, -1))}
+              >
+                <ChevronLeftIcon />
+              </Button>
+              <span className="dho-cal-month-nav-label">{formatMonthLabel(year, month, locale)}</span>
+              <Button
+                variant="secondary"
+                size="small"
+                className="dho-cal-icon-button"
+                aria-label={dictionary.calendar.next}
+                onClick={() => setMonthAnchor((anchor) => addMonthsToKey(anchor, 1))}
+              >
+                <ChevronRightIcon />
+              </Button>
+            </div>
+          ) : null}
 
-        {occurrences && view === "month" ? (
-          <MonthView
-            year={year}
-            month={month}
-            occurrences={occurrences}
-            officeOpenDates={officeOpenDates}
-            locale={locale}
-            onSelectDate={openDayModal}
-          />
-        ) : null}
-        {occurrences && view === "week" ? (
-          <WeekView anchorDateKey={anchorDate} occurrences={occurrences} locale={locale} onSelectDate={openDayModal} />
-        ) : null}
-        {occurrences && view === "day" ? <DayView dateKey={anchorDate} occurrences={occurrences} locale={locale} /> : null}
-        {occurrences && view === "upcoming" ? <UpcomingView occurrences={occurrences} locale={locale} /> : null}
-      </Card>
+          {loadError ? <p role="alert">{loadError}</p> : null}
+          {!calendarData ? <p>{dictionary.common.loading}</p> : null}
 
-      <DayDetailsModal
-        open={modalOpen}
-        dateKey={selectedDate}
-        occurrences={occurrences ?? []}
-        locale={locale}
-        onClose={() => setModalOpen(false)}
-        publicDayInfo={publicDayInfo}
-      />
-    </main>
+          {calendarData && view === "attendance" ? (
+            <AttendanceTimelineView days={calendarData.days} locale={locale} />
+          ) : null}
+
+          {occurrences && view === "events" ? (
+            <MonthView year={year} month={month} occurrences={occurrences} locale={locale} onSelectDate={openDayModal} />
+          ) : null}
+        </Card>
+      </main>
+
+      {view === "events" ? (
+        <DayDetailsModal
+          open={modalOpen}
+          dateKey={selectedDate}
+          occurrences={occurrences ?? []}
+          locale={locale}
+          onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+    </div>
   );
 }
