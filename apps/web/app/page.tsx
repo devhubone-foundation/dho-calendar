@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { PublicCalendarResponse } from "@dho/contracts";
 
+import { CalendarLegend } from "../components/calendar/CalendarLegend";
 import { DayDetailsModal, type PublicDayInfo } from "../components/calendar/DayDetailsModal";
 import { DayView } from "../components/calendar/DayView";
 import { MonthView } from "../components/calendar/MonthView";
@@ -93,9 +94,6 @@ export default function PublicCalendarPage() {
   }, [view, anchorDate, refreshTick]);
 
   const occurrences = calendarData?.events ?? null;
-  const officeOpenDates = calendarData
-    ? new Set(calendarData.days.filter((day) => day.isPublicOpenDay).map((day) => day.date))
-    : undefined;
   const selectedDay = calendarData?.days.find((day) => day.date === selectedDate);
   const publicDayInfo: PublicDayInfo | undefined = selectedDay
     ? {
@@ -139,51 +137,74 @@ export default function PublicCalendarPage() {
           ? formatEventDate(anchorDate, locale)
           : null;
 
+  const currentDay = calendarData?.days.find((day) => day.date === anchorDate);
+
   return (
-    <main className="dho-shell-main" ref={containerRef}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+    <div className="dho-public-page" ref={containerRef}>
+      <header className="dho-public-topbar">
+        <span className="dho-public-brand">{dictionary.nav.brandName}</span>
         <LocaleSwitcher />
-      </div>
-      <Card>
-        <h1>{dictionary.publicPage.title}</h1>
-        <p>{dictionary.publicPage.subtitle}</p>
+      </header>
 
-        <ViewSwitcher view={view} onChange={setView} />
-
-        {view !== "upcoming" ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-            <Button variant="secondary" size="small" onClick={goPrevious}>
-              {dictionary.calendar.previous}
-            </Button>
-            <Button variant="secondary" size="small" onClick={goToday}>
-              {dictionary.calendar.today}
-            </Button>
-            <Button variant="secondary" size="small" onClick={goNext}>
-              {dictionary.calendar.next}
-            </Button>
-            <strong>{headerLabel}</strong>
+      <main className="dho-shell-main">
+        <Card>
+          <div className="dho-page-header">
+            <div>
+              <h1>{dictionary.publicPage.title}</h1>
+              <p>{dictionary.publicPage.subtitle}</p>
+            </div>
           </div>
-        ) : null}
 
-        {loadError ? <p role="alert">{loadError}</p> : null}
-        {!occurrences ? <p>{dictionary.common.loading}</p> : null}
+          <ViewSwitcher view={view} onChange={setView} />
 
-        {occurrences && view === "month" ? (
-          <MonthView
-            year={year}
-            month={month}
-            occurrences={occurrences}
-            officeOpenDates={officeOpenDates}
-            locale={locale}
-            onSelectDate={openDayModal}
-          />
-        ) : null}
-        {occurrences && view === "week" ? (
-          <WeekView anchorDateKey={anchorDate} occurrences={occurrences} locale={locale} onSelectDate={openDayModal} />
-        ) : null}
-        {occurrences && view === "day" ? <DayView dateKey={anchorDate} occurrences={occurrences} locale={locale} /> : null}
-        {occurrences && view === "upcoming" ? <UpcomingView occurrences={occurrences} locale={locale} /> : null}
-      </Card>
+          {view !== "upcoming" ? (
+            <div className="dho-cal-nav-row">
+              <Button variant="secondary" size="small" onClick={goPrevious}>
+                {dictionary.calendar.previous}
+              </Button>
+              <Button variant="secondary" size="small" onClick={goToday}>
+                {dictionary.calendar.today}
+              </Button>
+              <Button variant="secondary" size="small" onClick={goNext}>
+                {dictionary.calendar.next}
+              </Button>
+              <strong>{headerLabel}</strong>
+            </div>
+          ) : null}
+
+          {loadError ? <p role="alert">{loadError}</p> : null}
+          {!occurrences ? <p>{dictionary.common.loading}</p> : null}
+
+          {occurrences && view === "month" ? (
+            <MonthView
+              year={year}
+              month={month}
+              occurrences={occurrences}
+              days={calendarData?.days}
+              locale={locale}
+              onSelectDate={openDayModal}
+              onSwitchToUpcoming={() => setView("upcoming")}
+            />
+          ) : null}
+          {occurrences && view === "week" ? (
+            <WeekView
+              anchorDateKey={anchorDate}
+              occurrences={occurrences}
+              days={calendarData?.days}
+              locale={locale}
+              onSelectDate={openDayModal}
+            />
+          ) : null}
+          {occurrences && view === "day" ? (
+            <DayView dateKey={anchorDate} occurrences={occurrences} day={currentDay} locale={locale} />
+          ) : null}
+          {occurrences && view === "upcoming" ? (
+            <UpcomingView occurrences={occurrences} days={calendarData?.days} locale={locale} />
+          ) : null}
+
+          {occurrences && view !== "day" ? <CalendarLegend /> : null}
+        </Card>
+      </main>
 
       <DayDetailsModal
         open={modalOpen}
@@ -193,6 +214,6 @@ export default function PublicCalendarPage() {
         onClose={() => setModalOpen(false)}
         publicDayInfo={publicDayInfo}
       />
-    </main>
+    </div>
   );
 }

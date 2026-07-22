@@ -56,36 +56,45 @@ export default function AuditPage() {
       {loadError ? <p role="alert">{loadError}</p> : null}
       {!entries ? <p>{dictionary.common.loading}</p> : null}
 
-      {entries && entries.length === 0 ? <p className="dho-cal-empty">{dictionary.audit.noEntries}</p> : null}
+      {entries && entries.length === 0 ? (
+        <div className="dho-empty-state">
+          <span className="dho-empty-state-icon" aria-hidden="true">
+            🗂️
+          </span>
+          <p>{dictionary.audit.noEntries}</p>
+        </div>
+      ) : null}
 
       {entries && entries.length > 0 ? (
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left" }}>{dictionary.audit.when}</th>
-              <th style={{ textAlign: "left" }}>{dictionary.audit.action}</th>
-              <th style={{ textAlign: "left" }}>{dictionary.audit.actor}</th>
-              <th style={{ textAlign: "left" }}>{dictionary.audit.target}</th>
-              <th style={{ textAlign: "left" }}>{dictionary.audit.details}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id}>
-                <td>{formatTimestamp(entry.createdAt, locale)}</td>
-                <td>{entry.action}</td>
-                <td>{entry.actorEmail ?? dictionary.audit.systemActor}</td>
-                <td>
-                  {entry.targetType}
-                  {entry.targetId ? ` (${entry.targetId})` : ""}
-                </td>
-                <td style={{ fontFamily: "monospace", fontSize: "0.8125rem" }}>
-                  {entry.metadata ? JSON.stringify(entry.metadata) : "—"}
-                </td>
+        <div className="dho-table-scroll" style={{ marginTop: "1rem" }}>
+          <table>
+            <thead>
+              <tr>
+                <th>{dictionary.audit.when}</th>
+                <th>{dictionary.audit.action}</th>
+                <th>{dictionary.audit.actor}</th>
+                <th>{dictionary.audit.target}</th>
+                <th>{dictionary.audit.details}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={entry.id}>
+                  <td>{formatTimestamp(entry.createdAt, locale)}</td>
+                  <td>{entry.action}</td>
+                  <td>{entry.actorEmail ?? dictionary.audit.systemActor}</td>
+                  <td>
+                    {entry.targetType}
+                    {entry.targetId ? ` (${entry.targetId})` : ""}
+                  </td>
+                  <td style={{ fontFamily: "monospace", fontSize: "0.8125rem" }}>
+                    {entry.metadata ? JSON.stringify(entry.metadata) : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </Card>
   );

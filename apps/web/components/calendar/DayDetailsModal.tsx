@@ -57,6 +57,7 @@ export function DayDetailsModal({
       open={open}
       onClose={onClose}
       title={dictionary.calendar.dayModalTitle.replace("{date}", formatEventDate(dateKey, locale))}
+      closeLabel={dictionary.calendar.closeModal}
     >
       {publicDayInfo ? (
         <PublicDayAttendance

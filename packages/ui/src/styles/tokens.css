@@ -12,9 +12,33 @@
   --dho-color-teal: #58a399;
   --dho-color-leaf: #67b63a;
 
+  /* Owner-provided DevHubOne palette additions, 2026-07-21 (see TOKENS.md) */
+  --dho-color-light-green: #dfebd5;
+  --dho-color-light-yellow: #e3f4c3;
+  --dho-color-grey: #d9d9d9;
+
   /* Derived functional colors, not literal DHO values (see TOKENS.md) */
   --dho-color-danger: #c0392b;
   --dho-color-danger-bg: #fbeaea;
+
+  /* Semantic tokens for calendar/day-cell states, built from the palette
+   * above (see TOKENS.md "Semantic calendar tokens"). Never hard-code these
+   * colors directly in feature components — use these variables. */
+  --dho-status-open-bg: var(--dho-color-light-green);
+  --dho-status-open-accent: var(--dho-color-leaf);
+  --dho-status-closed-bg: var(--dho-color-grey);
+  --dho-status-closed-text: var(--dho-color-navy);
+  --dho-status-changed-accent: var(--dho-color-teal);
+  --dho-status-attending-bg: var(--dho-color-leaf);
+  --dho-status-attending-text: #ffffff;
+  --dho-status-not-sure-bg: var(--dho-color-light-yellow);
+  --dho-status-not-sure-border: var(--dho-color-ink);
+  --dho-status-not-sure-text: var(--dho-color-ink);
+  --dho-status-event-bg: var(--dho-color-navy);
+  --dho-status-event-text: var(--dho-color-paper);
+  --dho-status-today-ring: var(--dho-color-leaf);
+  --dho-status-warning-bg: var(--dho-color-light-yellow);
+  --dho-status-warning-text: var(--dho-color-ink);
 
   /* Sourced radii */
   --dho-radius-sm: 0.5rem;
@@ -38,6 +62,12 @@
   --dho-avatar-palette-2: var(--dho-color-sage);
   --dho-avatar-palette-3: var(--dho-color-teal);
   --dho-avatar-palette-4: var(--dho-color-leaf);
+
+  /* Shared shadow + sizing tokens (Issue #12 redesign) */
+  --dho-shadow-card: 0 4px 14px rgba(34, 47, 69, 0.12);
+  --dho-shadow-modal: 0 12px 32px rgba(34, 47, 69, 0.28);
+  --dho-touch-target: 2.75rem; /* 44px min touch target, WCAG AA */
+  --dho-container-max: 75rem; /* ~1200px */
 }
 
 body {

@@ -4,6 +4,11 @@
  * this stylesheet can be imported once by the consuming app.
  */
 
+*:focus-visible {
+  outline: 2px solid var(--dho-color-leaf);
+  outline-offset: 2px;
+}
+
 /* Button — reproduces DevHubOne's real outlined-pill CTA (see TOKENS.md) */
 .dho-button {
   display: inline-flex;
@@ -14,6 +19,7 @@
   font-weight: 700;
   border-radius: var(--dho-radius-pill);
   padding: var(--dho-space-2) var(--dho-space-8);
+  min-height: var(--dho-touch-target);
   cursor: pointer;
   transition:
     transform 0.2s ease,
@@ -38,19 +44,129 @@
   border-color: var(--dho-color-danger);
   color: var(--dho-color-danger);
 }
+/* Accent CTA — the single most important action per screen (mockup spec). */
+.dho-button--accent {
+  border-color: var(--dho-color-leaf);
+  background: var(--dho-color-leaf);
+  color: #fff;
+}
 .dho-button--small {
   padding: var(--dho-space-1) var(--dho-space-4);
+  min-height: 2.25rem;
 }
 
 /* Card */
 .dho-card {
-  border-radius: var(--dho-radius-sm);
+  border-radius: var(--dho-radius-lg);
   background: #fff;
-  box-shadow: 0 4px 14px rgba(34, 47, 69, 0.12);
+  box-shadow: var(--dho-shadow-card);
   padding: var(--dho-space-6);
 }
 .dho-card--accent {
   background: var(--dho-color-sage);
+}
+
+/* Shared page-level layout utilities, reused across public + admin screens. */
+.dho-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dho-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--dho-space-6);
+}
+.dho-page-header h1 {
+  margin: 0;
+}
+.dho-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-4);
+}
+.dho-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-3);
+  flex-wrap: wrap;
+}
+.dho-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--dho-space-4);
+}
+/* Wrap any wide table/grid so it scrolls internally, never the page
+ * (PRODUCT_BLUEPRINT.md §17 / Issue #12 "no horizontal page scroll"). */
+.dho-table-scroll {
+  overflow-x: auto;
+  border-radius: var(--dho-radius-sm);
+}
+.dho-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 32rem;
+}
+.dho-table-scroll th,
+.dho-table-scroll td {
+  text-align: left;
+  padding: var(--dho-space-2) var(--dho-space-3);
+  border-bottom: 1px solid var(--dho-color-grey);
+  vertical-align: top;
+}
+.dho-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dho-space-2);
+  text-align: center;
+  padding: var(--dho-space-8) var(--dho-space-4);
+  color: var(--dho-color-navy);
+}
+.dho-empty-state-icon {
+  font-size: 2rem;
+}
+
+/* Auth pages (login / change-password) — centered card, optional dark brand
+ * panel on desktop, single column on mobile (mockup screens 6-7). */
+.dho-auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--dho-color-paper);
+}
+.dho-auth-topbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--dho-space-4);
+}
+.dho-auth-layout {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dho-space-8);
+  padding: var(--dho-space-4);
+}
+.dho-auth-brand-panel {
+  display: none;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+  background: var(--dho-color-ink);
+  color: var(--dho-color-paper);
+  border-radius: var(--dho-radius-lg);
+  padding: var(--dho-space-8);
+  max-width: 20rem;
+}
+.dho-auth-brand-panel h2 {
+  margin: 0;
+}
+@media (min-width: 60rem) {
+  .dho-auth-brand-panel {
+    display: flex;
+  }
+}
+.dho-auth-card {
+  max-width: 24rem;
+  width: 100%;
 }
 
 /* Form field / input — reproduces DevHubOne's real input treatment */
@@ -69,10 +185,12 @@
   background: var(--dho-color-paper);
   border-radius: var(--dho-radius-sm);
   padding: var(--dho-space-2);
+  min-height: var(--dho-touch-target);
   font-family: var(--dho-font-body);
   font-size: 1rem;
   color: var(--dho-color-ink);
   width: 100%;
+  box-sizing: border-box;
 }
 .dho-input:focus {
   outline: 2px solid var(--dho-color-navy);
@@ -84,6 +202,39 @@
 .dho-field-error {
   color: var(--dho-color-danger);
   font-size: 0.875rem;
+}
+/* Bilingual BG/EN field pairs — side by side on desktop, stacked on mobile
+ * (Issue #12: layouts must tolerate the longer Bulgarian string). */
+.dho-field-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--dho-space-4);
+}
+@media (min-width: 40rem) {
+  .dho-field-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.dho-checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  min-height: var(--dho-touch-target);
+  cursor: pointer;
+}
+.dho-checkbox-row input {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+.dho-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dho-space-3);
+}
+.dho-checkbox-lg {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
 }
 
 /* Modal */
@@ -99,12 +250,83 @@
 }
 .dho-modal {
   background: #fff;
-  border-radius: var(--dho-radius-md);
+  border-radius: var(--dho-radius-lg);
   padding: var(--dho-space-6);
   max-width: 32rem;
   width: 100%;
   max-height: calc(100vh - 2 * var(--dho-space-8));
   overflow-y: auto;
+  box-shadow: var(--dho-shadow-modal);
+}
+.dho-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--dho-space-4);
+}
+.dho-modal-header h2 {
+  margin: 0;
+}
+.dho-modal-close {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--dho-radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--dho-color-ink);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.dho-modal-close:hover {
+  background: var(--dho-color-paper);
+}
+.dho-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--dho-space-3);
+  margin-top: var(--dho-space-6);
+  flex-wrap: wrap;
+}
+
+/* Recurrence-scope dialog — clearly-labeled radio choices with a one-line
+ * consequence (mockup screen 12). */
+.dho-scope-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+  margin-top: var(--dho-space-4);
+}
+.dho-scope-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dho-space-3);
+  padding: var(--dho-space-3);
+  border: 2px solid var(--dho-color-grey);
+  border-radius: var(--dho-radius-md);
+  cursor: pointer;
+}
+.dho-scope-option:has(input:checked) {
+  border-color: var(--dho-color-navy);
+  background: var(--dho-color-paper);
+}
+.dho-scope-option input {
+  margin-top: 0.25rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+.dho-scope-option strong {
+  display: block;
+}
+.dho-scope-option-desc {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--dho-color-navy);
 }
 
 /* Avatar */
@@ -120,26 +342,34 @@
   flex-shrink: 0;
 }
 
-/* Language switch */
+/* Language switch — a small segmented pill toggle, present on every screen. */
 .dho-language-switch {
   display: inline-flex;
-  gap: var(--dho-space-2);
+  gap: 2px;
+  /* Neutral, theme-agnostic tint so this reads on both light (login/public
+   * card) and dark (admin/public topbar) surfaces without a variant prop. */
+  background: rgba(140, 140, 140, 0.25);
+  border-radius: var(--dho-radius-pill);
+  padding: 2px;
 }
 .dho-language-switch a {
   font-family: var(--dho-font-body);
   font-weight: 700;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   padding: var(--dho-space-1) var(--dho-space-3);
+  min-width: 2.5rem;
+  text-align: center;
   border-radius: var(--dho-radius-pill);
   color: inherit;
   text-decoration: none;
 }
 .dho-language-switch a[aria-current="true"] {
-  background: var(--dho-color-navy);
-  color: var(--dho-color-paper);
+  background: var(--dho-color-leaf);
+  color: #fff;
 }
-.dho-language-switch a:hover {
-  text-decoration: underline;
+.dho-language-switch a:not([aria-current="true"]):hover {
+  background: rgba(34, 47, 69, 0.12);
 }
 
 /* Badge */
@@ -170,49 +400,90 @@
   color: var(--dho-color-danger);
   border-color: var(--dho-color-danger);
 }
+/* Uncertain attendance — a dashed border keeps it visually distinct from a
+ * confirmed/solid badge at a glance, never confusable (PRODUCT_BLUEPRINT.md §12.3). */
+.dho-badge--not-sure {
+  background: var(--dho-status-not-sure-bg);
+  color: var(--dho-status-not-sure-text);
+  border: 1px dashed var(--dho-status-not-sure-border);
+}
+.dho-badge--event {
+  background: var(--dho-status-event-bg);
+  color: var(--dho-status-event-text);
+  border-color: transparent;
+}
+.dho-badge--warning {
+  background: var(--dho-status-warning-bg);
+  color: var(--dho-status-warning-text);
+  border-color: transparent;
+}
 
 /* Authenticated app shell */
 .dho-shell {
   min-height: 100vh;
+  max-width: 100vw;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
 .dho-shell-header {
   display: flex;
   align-items: center;
-  gap: var(--dho-space-6);
   flex-wrap: wrap;
+  gap: var(--dho-space-4);
   background: var(--dho-color-navy);
   color: var(--dho-color-paper);
-  padding: var(--dho-space-4) var(--dho-space-6);
+  padding: var(--dho-space-3) var(--dho-space-4);
 }
 .dho-shell-brand {
   font-weight: 700;
   font-size: 1.125rem;
+  white-space: nowrap;
+}
+.dho-shell-menu-toggle {
+  display: none;
+  width: var(--dho-touch-target);
+  height: var(--dho-touch-target);
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--dho-color-paper);
+  font-size: 1.375rem;
+  cursor: pointer;
+  border-radius: var(--dho-radius-sm);
+  flex-shrink: 0;
+}
+.dho-shell-menu-toggle:hover {
+  background: rgba(239, 244, 239, 0.15);
 }
 .dho-shell-nav {
   display: flex;
-  gap: var(--dho-space-4);
+  gap: var(--dho-space-2);
   flex: 1;
   flex-wrap: wrap;
 }
 .dho-shell-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--dho-touch-target);
   color: var(--dho-color-paper);
   text-decoration: none;
   font-weight: 600;
-  padding: var(--dho-space-1) var(--dho-space-2);
-  border-radius: var(--dho-radius-sm);
+  padding: var(--dho-space-1) var(--dho-space-3);
+  border-radius: var(--dho-radius-pill);
 }
 .dho-shell-nav a[aria-current="page"] {
-  background: rgba(239, 244, 239, 0.2);
+  background: var(--dho-color-leaf);
 }
-.dho-shell-nav a:hover {
-  text-decoration: underline;
+.dho-shell-nav a:not([aria-current="page"]):hover {
+  background: rgba(239, 244, 239, 0.15);
 }
 .dho-shell-user {
   display: flex;
   align-items: center;
   gap: var(--dho-space-3);
+  margin-left: auto;
 }
 .dho-shell-user .dho-button {
   border-color: var(--dho-color-paper);
@@ -220,8 +491,50 @@
 }
 .dho-shell-main {
   flex: 1;
-  padding: var(--dho-space-8) var(--dho-space-6);
-  max-width: 60rem;
+  padding: var(--dho-space-6) var(--dho-space-4);
+  max-width: var(--dho-container-max);
   width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+}
+
+@media (min-width: 48rem) {
+  .dho-shell-main {
+    padding: var(--dho-space-8) var(--dho-space-6);
+  }
+}
+
+/* Collapse the nav into a hamburger drawer below tablet width, per Issue #12. */
+@media (max-width: 48rem) {
+  .dho-shell-menu-toggle {
+    display: inline-flex;
+  }
+  .dho-shell-nav {
+    display: none;
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: var(--dho-color-navy);
+    padding: var(--dho-space-2);
+    box-shadow: var(--dho-shadow-card);
+  }
+  .dho-shell-nav a {
+    padding: var(--dho-space-3);
+    border-radius: var(--dho-radius-sm);
+  }
+  .dho-shell-header {
+    position: relative;
+  }
+  .dho-shell--nav-open .dho-shell-nav {
+    display: flex;
+  }
+  .dho-shell-user {
+    margin-left: 0;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
 }

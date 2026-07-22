@@ -76,3 +76,31 @@ additions needed to build usable UI:
 Agents implementing later issues must reuse these tokens/components rather
 than hard-coding new colors. If DevHubOne's real site changes, update this
 file's source citation and the corresponding CSS variables together.
+
+## Colors (owner-provided DevHubOne palette, 2026-07-21)
+
+Added for the Issue #12 UI/UX redesign, provided directly by the product
+owner (not scraped from the live site like the six colors above):
+
+| Token | Hex | Role |
+|---|---|---|
+| `--dho-color-light-green` | `#DFEBD5` | Soft page/card backgrounds, open-day surface |
+| `--dho-color-light-yellow` | `#E3F4C3` | "Not sure" attendance, admin coverage warnings |
+| `--dho-color-grey` | `#D9D9D9` | Neutral borders, closed-day surfaces, disabled states |
+
+## Semantic calendar tokens
+
+Built from the palette above so feature code never hard-codes a raw hex for
+day/attendance status. Defined in `tokens.css`, consumed by
+`apps/web/styles/calendar.css`:
+
+| Token | Meaning |
+|---|---|
+| `--dho-status-open-bg` / `--dho-status-open-accent` | Hub open, confirmed mentor(s) attending |
+| `--dho-status-closed-bg` / `--dho-status-closed-text` | Hub closed, or open with no confirmed mentor (not shown as a normal open day per PRODUCT_BLUEPRINT.md §13) |
+| `--dho-status-changed-accent` | Date-specific hours override |
+| `--dho-status-attending-bg` / `--dho-status-attending-text` | Confirmed attendee avatar/marker |
+| `--dho-status-not-sure-bg` / `--dho-status-not-sure-border` / `--dho-status-not-sure-text` | Uncertain attendance — always a distinct dashed/outlined treatment, never confusable with confirmed |
+| `--dho-status-event-bg` / `--dho-status-event-text` | Event blocks/chips — visually more prominent than attendance markers |
+| `--dho-status-today-ring` | Today marker |
+| `--dho-status-warning-bg` / `--dho-status-warning-text` | Admin "uncovered day" warnings |

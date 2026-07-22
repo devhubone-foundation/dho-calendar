@@ -238,7 +238,7 @@ export default function AttendancePage() {
   }
 
   return (
-    <>
+    <div className="dho-stack">
       <Card>
         <h1>{dictionary.attendancePage.title}</h1>
 
@@ -269,59 +269,66 @@ export default function AttendancePage() {
         {loadError ? <p role="alert">{loadError}</p> : null}
 
         {days ? (
-          <form onSubmit={handleSaveWeekly}>
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "1rem" }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left" }} />
-                  <th style={{ textAlign: "left" }}>{dictionary.attendancePage.attends}</th>
-                  <th style={{ textAlign: "left" }}>{dictionary.officeSettings.startTime}</th>
-                  <th style={{ textAlign: "left" }}>{dictionary.officeSettings.endTime}</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {days.map((day) => (
-                  <tr key={day.weekday}>
-                    <td>{dictionary.weekdays[day.weekday]}</td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        aria-label={`${dictionary.weekdays[day.weekday]} ${dictionary.attendancePage.attends}`}
-                        checked={day.attends}
-                        onChange={(event) => updateDay(day.weekday, { attends: event.target.checked })}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="time"
-                        className="dho-input"
-                        value={day.startTime}
-                        disabled={!day.attends}
-                        onChange={(event) => updateDay(day.weekday, { startTime: event.target.value })}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="time"
-                        className="dho-input"
-                        value={day.endTime}
-                        disabled={!day.attends}
-                        onChange={(event) => updateDay(day.weekday, { endTime: event.target.value })}
-                      />
-                    </td>
-                    <td>
-                      {day.isInherited ? (
-                        <Badge variant="muted">{dictionary.attendancePage.inheritedBadge}</Badge>
-                      ) : null}
-                    </td>
+          <form onSubmit={handleSaveWeekly} className="dho-stack">
+            <div className="dho-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th />
+                    <th>{dictionary.attendancePage.attends}</th>
+                    <th>{dictionary.officeSettings.startTime}</th>
+                    <th>{dictionary.officeSettings.endTime}</th>
+                    <th />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {days.map((day) => (
+                    <tr key={day.weekday}>
+                      <td>{dictionary.weekdays[day.weekday]}</td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          className="dho-checkbox-lg"
+                          aria-label={`${dictionary.weekdays[day.weekday]} ${dictionary.attendancePage.attends}`}
+                          checked={day.attends}
+                          onChange={(event) => updateDay(day.weekday, { attends: event.target.checked })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="time"
+                          className="dho-input"
+                          value={day.startTime}
+                          disabled={!day.attends}
+                          onChange={(event) => updateDay(day.weekday, { startTime: event.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="time"
+                          className="dho-input"
+                          value={day.endTime}
+                          disabled={!day.attends}
+                          onChange={(event) => updateDay(day.weekday, { endTime: event.target.value })}
+                        />
+                      </td>
+                      <td>
+                        {day.isInherited ? (
+                          <Badge variant="muted">{dictionary.attendancePage.inheritedBadge}</Badge>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             {saveMessage ? <p>{saveMessage}</p> : null}
-            {saveError ? <p role="alert">{saveError}</p> : null}
-            <Button type="submit" disabled={saving}>
+            {saveError ? (
+              <p role="alert" className="dho-field-error">
+                {saveError}
+              </p>
+            ) : null}
+            <Button type="submit" variant="accent" disabled={saving} style={{ alignSelf: "flex-start" }}>
               {saving ? dictionary.attendancePage.saving : dictionary.attendancePage.saveChanges}
             </Button>
           </form>
@@ -330,65 +337,71 @@ export default function AttendancePage() {
         )}
       </Card>
 
-      <Card style={{ marginTop: "1.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Card>
+        <div className="dho-page-header">
           <h2>{dictionary.attendancePage.exceptionsTitle}</h2>
-          <Button onClick={openNewExceptionModal}>{dictionary.attendancePage.newException}</Button>
+          <Button variant="accent" onClick={openNewExceptionModal}>
+            {dictionary.attendancePage.newException}
+          </Button>
         </div>
         <p>{dictionary.attendancePage.exceptionsHint}</p>
 
         {exceptionsError ? <p role="alert">{exceptionsError}</p> : null}
-        {exceptions && exceptions.length === 0 ? <p>{dictionary.attendancePage.noExceptions}</p> : null}
+        {exceptions && exceptions.length === 0 ? <p className="dho-cal-empty">{dictionary.attendancePage.noExceptions}</p> : null}
 
         {exceptions && exceptions.length > 0 ? (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: "left" }}>{dictionary.attendancePage.date}</th>
-                <th style={{ textAlign: "left" }}>{dictionary.attendancePage.status}</th>
-                <th style={{ textAlign: "left" }}>{dictionary.attendancePage.hours}</th>
-                <th style={{ textAlign: "left" }} />
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {exceptions.map((exception) => {
-                const effective = effectiveByDate.get(exception.date);
-                return (
-                  <tr key={exception.date}>
-                    <td>{exception.date}</td>
-                    <td>{dictionary.attendanceStatus[exception.status]}</td>
-                    <td>
-                      {exception.startTime && exception.endTime
-                        ? `${exception.startTime}–${exception.endTime}`
-                        : "—"}
-                    </td>
-                    <td>
-                      {effective && !effective.officeIsOpen ? (
-                        <Badge variant="muted">{dictionary.attendancePage.officeClosedNotice}</Badge>
-                      ) : effective?.isClamped ? (
-                        <Badge variant="danger">
-                          {effective.publicStartTime && effective.publicEndTime
-                            ? dictionary.attendancePage.clampedBadge
-                                .replace("{start}", effective.publicStartTime)
-                                .replace("{end}", effective.publicEndTime)
-                            : dictionary.attendancePage.clampedFullyOutside}
-                        </Badge>
-                      ) : null}
-                    </td>
-                    <td style={{ display: "flex", gap: "0.5rem" }}>
-                      <Button variant="secondary" size="small" onClick={() => openEditExceptionModal(exception)}>
-                        {dictionary.attendancePage.edit}
-                      </Button>
-                      <Button variant="danger" size="small" onClick={() => setConfirmingDelete(exception)}>
-                        {dictionary.attendancePage.delete}
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="dho-table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>{dictionary.attendancePage.date}</th>
+                  <th>{dictionary.attendancePage.status}</th>
+                  <th>{dictionary.attendancePage.hours}</th>
+                  <th />
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {exceptions.map((exception) => {
+                  const effective = effectiveByDate.get(exception.date);
+                  return (
+                    <tr key={exception.date}>
+                      <td>{exception.date}</td>
+                      <td>{dictionary.attendanceStatus[exception.status]}</td>
+                      <td>
+                        {exception.startTime && exception.endTime
+                          ? `${exception.startTime}–${exception.endTime}`
+                          : "—"}
+                      </td>
+                      <td>
+                        {effective && !effective.officeIsOpen ? (
+                          <Badge variant="muted">{dictionary.attendancePage.officeClosedNotice}</Badge>
+                        ) : effective?.isClamped ? (
+                          <Badge variant="warning">
+                            {effective.publicStartTime && effective.publicEndTime
+                              ? dictionary.attendancePage.clampedBadge
+                                  .replace("{start}", effective.publicStartTime)
+                                  .replace("{end}", effective.publicEndTime)
+                              : dictionary.attendancePage.clampedFullyOutside}
+                          </Badge>
+                        ) : null}
+                      </td>
+                      <td>
+                        <div className="dho-row" style={{ gap: "0.5rem" }}>
+                          <Button variant="secondary" size="small" onClick={() => openEditExceptionModal(exception)}>
+                            {dictionary.attendancePage.edit}
+                          </Button>
+                          <Button variant="danger" size="small" onClick={() => setConfirmingDelete(exception)}>
+                            {dictionary.attendancePage.delete}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : null}
       </Card>
 
@@ -399,8 +412,9 @@ export default function AttendancePage() {
           setEditingDate(null);
         }}
         title={dictionary.attendancePage.newException}
+        closeLabel={dictionary.common.close}
       >
-        <form onSubmit={handleSaveException}>
+        <form onSubmit={handleSaveException} className="dho-stack">
           <FormField
             label={dictionary.attendancePage.date}
             type="date"
@@ -424,23 +438,28 @@ export default function AttendancePage() {
               <option value="NOT_ATTENDING">{dictionary.attendanceStatus.NOT_ATTENDING}</option>
             </select>
           </div>
-          <FormField
-            label={dictionary.officeSettings.startTime}
-            type="time"
-            value={exceptionForm.startTime}
-            disabled={exceptionForm.status === "NOT_ATTENDING"}
-            onChange={(event) => setExceptionForm((prev) => ({ ...prev, startTime: event.target.value }))}
-          />
-          <FormField
-            label={dictionary.officeSettings.endTime}
-            type="time"
-            value={exceptionForm.endTime}
-            disabled={exceptionForm.status === "NOT_ATTENDING"}
-            onChange={(event) => setExceptionForm((prev) => ({ ...prev, endTime: event.target.value }))}
-          />
-          {exceptionError ? <p role="alert">{exceptionError}</p> : null}
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-            <Button type="submit">{dictionary.attendancePage.save}</Button>
+          <div className="dho-field-pair">
+            <FormField
+              label={dictionary.officeSettings.startTime}
+              type="time"
+              value={exceptionForm.startTime}
+              disabled={exceptionForm.status === "NOT_ATTENDING"}
+              onChange={(event) => setExceptionForm((prev) => ({ ...prev, startTime: event.target.value }))}
+            />
+            <FormField
+              label={dictionary.officeSettings.endTime}
+              type="time"
+              value={exceptionForm.endTime}
+              disabled={exceptionForm.status === "NOT_ATTENDING"}
+              onChange={(event) => setExceptionForm((prev) => ({ ...prev, endTime: event.target.value }))}
+            />
+          </div>
+          {exceptionError ? (
+            <p role="alert" className="dho-field-error">
+              {exceptionError}
+            </p>
+          ) : null}
+          <div className="dho-modal-actions">
             <Button
               type="button"
               variant="secondary"
@@ -451,6 +470,9 @@ export default function AttendancePage() {
             >
               {dictionary.attendancePage.cancel}
             </Button>
+            <Button type="submit" variant="accent">
+              {dictionary.attendancePage.save}
+            </Button>
           </div>
         </form>
       </Modal>
@@ -459,17 +481,18 @@ export default function AttendancePage() {
         open={confirmingDelete !== null}
         onClose={() => setConfirmingDelete(null)}
         title={dictionary.attendancePage.confirmDeleteTitle}
+        closeLabel={dictionary.common.close}
       >
         <p>{dictionary.attendancePage.confirmDeleteBody}</p>
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-          <Button variant="danger" onClick={() => void handleConfirmDelete()}>
-            {dictionary.common.confirm}
-          </Button>
+        <div className="dho-modal-actions">
           <Button variant="secondary" onClick={() => setConfirmingDelete(null)}>
             {dictionary.attendancePage.cancel}
           </Button>
+          <Button variant="danger" onClick={() => void handleConfirmDelete()}>
+            {dictionary.common.confirm}
+          </Button>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }
