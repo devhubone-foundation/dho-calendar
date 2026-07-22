@@ -3,12 +3,14 @@
 ## Document status
 
 - **Document:** Product Blueprint
-- **Version:** 1.1
+- **Version:** 1.2
 - **Status:** Approved product source of truth
 - **Product:** DevHubOne Office Calendar
 - **Primary audience:** Product owner, developers, Claude Code planning agents, implementation agents, reviewers, and testers
 - **Repository role:** This file is the authoritative product-level source of truth for the project
-- **Change history:** v1.1 (2026-07-22) — Version 1 scope change per §33: the public calendar's view model is replaced by exactly two query-param-selected views (Attendance, Events); see §15.1. The authenticated calendar's four-view model (§15.2) is unchanged. Approved by the product owner alongside Issue #12.
+- **Change history:**
+  - v1.2 (2026-07-22) — Version 1 scope change per §33: the Attendance view (§15.1.1) remains non-interactive at the day level, but each individual attendee's stripe/row is now a tap/click/keyboard-operable control that opens a per-attendee details modal (§16). Addresses attendance-hour labels being clipped at narrow mobile widths. Approved by the product owner alongside Issue #17/#18.
+  - v1.1 (2026-07-22) — Version 1 scope change per §33: the public calendar's view model is replaced by exactly two query-param-selected views (Attendance, Events); see §15.1. The authenticated calendar's four-view model (§15.2) is unchanged. Approved by the product owner alongside Issue #12.
 
 ---
 
@@ -761,7 +763,7 @@ Invalid or missing `view` values fall back to `attendance`.
 - A day with the office effectively open but no confirmed or uncertain attendees shows "Rest day" (EN "Rest Day", BG "Почивка") instead of an empty list.
 - Date-specific changed office hours remain visually distinguished (§17).
 - No events are shown in this view.
-- Days are not clickable and no day-details modal (§16) opens from this view — all relevant information for the visible range is already shown without interaction, which is the view's purpose.
+- Days themselves are not clickable and no day-details modal (§16) opens from this view — there is no per-day modal listing all of a day's attendees and events together, which remains the view's non-interactive purpose. However, each individual attendee's stripe/row is a tap/click/keyboard-operable control that opens a smaller per-attendee modal (§16) with that attendee's own details — added so mobile widths, where the shared hour axis and inline time labels are visually constrained (§17), have a reliable way to read full attendance details for one person.
 
 #### 15.1.2 Events view (`view=events`)
 
@@ -818,7 +820,7 @@ A default view must be selected during UX design and documented before implement
 
 ## 16. Day details modal
 
-Clicking or activating a date must open a modal containing relevant information for that day. This applies to the public calendar's Events view (§15.1.2) and to the authenticated calendar (§15.2). It does not apply to the public calendar's Attendance view (§15.1.1), which is intentionally non-interactive.
+Clicking or activating a date must open a modal containing relevant information for that day. This applies to the public calendar's Events view (§15.1.2) and to the authenticated calendar (§15.2). It does not apply to the public calendar's Attendance view (§15.1.1): days there remain non-clickable and no day-level modal opens.
 
 The modal may include:
 
@@ -839,6 +841,19 @@ The modal may include:
 - event description in the active language.
 
 The modal must be keyboard-accessible and usable within an iframe.
+
+### 16.1 Per-attendee modal (Attendance view only)
+
+The Attendance view (§15.1.1) does not use the day-details modal above. Instead, activating one attendee's stripe/row opens a smaller modal scoped to that one attendee for that one date, containing:
+
+- the attendee's profile picture;
+- the attendee's name;
+- localized qualification;
+- contact email;
+- attendance start and end time for that date;
+- the uncertain indicator when the attendee's status is `Not sure` (§12.3).
+
+It never lists other attendees, office state, or events. Like the day-details modal, it must be keyboard-accessible and usable within an iframe.
 
 ---
 
@@ -1109,8 +1124,8 @@ The following rules are authoritative:
 28. Audit history is Admin-only.
 29. Audit retention is seven days.
 30. The public calendar is embeddable by iframe and automatically resizes.
-31. The public calendar supports exactly two query-param-selected views — Attendance (rolling next-7-days, attendance-only, non-interactive) and Events (month grid, events-only, clickable) — with no view-switch buttons; the authenticated calendar supports Month, Week, Day, and Upcoming/List views with visible switch controls.
-32. Clicking a date opens a details modal.
+31. The public calendar supports exactly two query-param-selected views — Attendance (rolling next-7-days, attendance-only, days non-clickable with no day-level modal, but individual attendee stripes open a per-attendee modal per §16.1) and Events (month grid, events-only, clickable) — with no view-switch buttons; the authenticated calendar supports Month, Week, Day, and Upcoming/List views with visible switch controls.
+32. Clicking a date opens a details modal (except the Attendance view, whose days stay non-clickable); clicking an attendee's stripe in the Attendance view opens that attendee's own modal.
 33. Events are visually more prominent than attendance information.
 34. Bulgarian and English are supported on public and authenticated surfaces.
 

@@ -271,6 +271,9 @@ const bg: Dictionary = {
     viewAsListPrompt: "По-лесно за четене като списък на малък екран?",
     viewAsListAction: "Превключи към списък",
     closeModal: "Затвори",
+    attendanceMemberRowLabel: "Виж детайли за присъствието на {name}",
+    attendanceMemberModalTitle: "Присъствие на {date}",
+    contactButtonLabel: "Свържи се",
   },
   audit: {
     title: "История на действията",

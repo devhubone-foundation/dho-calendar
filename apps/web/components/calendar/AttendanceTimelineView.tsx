@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Avatar, cn } from "@dho/ui";
-import type { PublicCalendarDay } from "@dho/contracts";
+import type { PublicCalendarDay, PublicMemberAttendance } from "@dho/contracts";
 
 import { resolveUploadUrl } from "../../lib/auth/api-client";
 import { todayKey } from "../../lib/calendar-grid";
@@ -15,6 +16,8 @@ import {
 import { formatWeekdayAndDay } from "../../lib/event-format";
 import type { Locale } from "../../lib/i18n/locale";
 import { useDictionary } from "../../lib/i18n/use-locale";
+import { activatableProps } from "./activatable";
+import { AttendanceMemberModal, type SelectedAttendanceMember } from "./AttendanceMemberModal";
 
 export interface AttendanceTimelineViewProps {
   /** Exactly the next 7 days (today first through today+6), already
@@ -35,14 +38,23 @@ function percentOffset(minutes: number, range: TimeRange): number {
  * horizontal, attendance-only timeline for the next 7 days. Each day is a
  * row; each attending/maybe-attending member is a sub-row with a photo
  * badge and an hour stripe positioned along a shared time axis. No events,
- * no navigation, and days are not clickable — everything relevant is
- * already visible without interaction.
+ * no day-level navigation, and days themselves are not clickable — but each
+ * attendee row opens its own details modal (PRODUCT_BLUEPRINT.md §16.1), so
+ * mobile widths (where the shared axis and inline time label are clipped)
+ * still have a reliable way to read full attendance details.
  */
 export function AttendanceTimelineView({ days, locale }: AttendanceTimelineViewProps) {
   const dictionary = useDictionary();
   const range = computeWeekTimeRange(days, []);
   const marks = hourMarks(range);
   const today = todayKey();
+  const [selectedMember, setSelectedMember] = useState<SelectedAttendanceMember | null>(null);
+  const [memberModalOpen, setMemberModalOpen] = useState(false);
+
+  function openMemberModal(member: PublicMemberAttendance, uncertain: boolean, dateKey: string): void {
+    setSelectedMember({ member, uncertain, dateKey });
+    setMemberModalOpen(true);
+  }
 
   return (
     <div className="dho-attn-timeline">
@@ -116,7 +128,12 @@ export function AttendanceTimelineView({ days, locale }: AttendanceTimelineViewP
                   const left = percentOffset(timeOfDayToMinutes(member.startTime), range);
                   const width = Math.max(4, percentOffset(timeOfDayToMinutes(member.endTime), range) - left);
                   return (
-                    <div key={member.contactEmail} className="dho-attn-member-row">
+                    <div
+                      key={member.contactEmail}
+                      className="dho-attn-member-row"
+                      {...activatableProps(() => openMemberModal(member, uncertain, day.date))}
+                      aria-label={dictionary.calendar.attendanceMemberRowLabel.replace("{name}", member.fullName)}
+                    >
                       <div className="dho-attn-member-identity">
                         <Avatar
                           name={member.fullName}
@@ -165,6 +182,13 @@ export function AttendanceTimelineView({ days, locale }: AttendanceTimelineViewP
           {dictionary.calendar.legendRestDay}
         </span>
       </div>
+
+      <AttendanceMemberModal
+        open={memberModalOpen}
+        selected={selectedMember}
+        locale={locale}
+        onClose={() => setMemberModalOpen(false)}
+      />
     </div>
   );
 }

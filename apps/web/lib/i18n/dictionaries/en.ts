@@ -266,6 +266,9 @@ const en = {
     viewAsListPrompt: "Easier to read as a list on a small screen?",
     viewAsListAction: "Switch to list view",
     closeModal: "Close",
+    attendanceMemberRowLabel: "View attendance details for {name}",
+    attendanceMemberModalTitle: "Attendance on {date}",
+    contactButtonLabel: "Contact",
   },
   audit: {
     title: "Audit history",
