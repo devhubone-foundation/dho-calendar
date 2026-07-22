@@ -44,6 +44,15 @@ export function formatWeekdayAndDay(dateKey: string, locale: Locale): string {
   return `${weekday} ${day}`;
 }
 
+/** Full weekday name for headings, e.g. "Monday" / "понеделник". */
+export function formatFullWeekday(dateKey: string, locale: Locale): string {
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
+  return new Intl.DateTimeFormat(intlLocale(locale), {
+    timeZone: OFFICE_DISPLAY_TIMEZONE,
+    weekday: "long",
+  }).format(date);
+}
+
 /** A month + year label for the Month view header, e.g. "August 2026". */
 export function formatMonthLabel(year: number, month: number, locale: Locale): string {
   return new Intl.DateTimeFormat(intlLocale(locale), {

@@ -15,7 +15,7 @@ import { EventsService } from "../events/events.service";
 import { OfficeScheduleService } from "../office-schedule/office-schedule.service";
 import { PrismaService } from "../prisma/prisma.service";
 
-type PublicMemberFields = Omit<PublicMemberAttendance, "startTime" | "endTime">;
+type PublicMemberFields = Omit<PublicMemberAttendance, "slots">;
 
 @Injectable()
 export class PublicCalendarService {
@@ -100,11 +100,11 @@ function groupByDate(rows: ActiveMemberAttendanceDay[]): Map<string, ActiveMembe
   return map;
 }
 
-/** Only members with a non-null clamped public interval are listed — a
- * member whose entered hours have zero overlap with office hours has
- * nothing meaningful to publicly display (PRODUCT_BLUEPRINT.md §12.7's
- * clamping policy), so they are excluded from both the visible list and the
- * open-day determination above, keeping the two always consistent. */
+/** Only members with at least one clamped public slot are listed — a member
+ * whose entered slots have zero overlap with office hours has nothing
+ * meaningful to publicly display (PRODUCT_BLUEPRINT.md §12.7's clamping
+ * policy), so they are excluded from both the visible list and the open-day
+ * determination above, keeping the two always consistent. */
 function buildAttendeeList(
   dayMembers: ActiveMemberAttendanceDay[],
   status: AttendanceStatus,
@@ -112,10 +112,10 @@ function buildAttendeeList(
 ): PublicMemberAttendance[] {
   const attendees: PublicMemberAttendance[] = [];
   for (const member of dayMembers) {
-    if (member.status !== status || !member.publicStartTime || !member.publicEndTime) continue;
+    if (member.status !== status || member.publicSlots.length === 0) continue;
     const profile = profileByUserId.get(member.userId);
     if (!profile) continue;
-    attendees.push({ ...profile, startTime: member.publicStartTime, endTime: member.publicEndTime });
+    attendees.push({ ...profile, slots: member.publicSlots });
   }
   return attendees;
 }

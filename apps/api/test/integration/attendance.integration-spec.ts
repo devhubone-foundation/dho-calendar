@@ -59,30 +59,55 @@ describe("Attendance (integration)", () => {
         expect.objectContaining({
           weekday: "MONDAY",
           attends: true,
-          startTime: "12:00",
-          endTime: "20:00",
+          slots: [{ startTime: "12:00", endTime: "20:00" }],
           isInherited: true,
         }),
-        expect.objectContaining({ weekday: "TUESDAY", attends: false, isInherited: true }),
+        expect.objectContaining({ weekday: "TUESDAY", attends: false, slots: [], isInherited: true }),
       ]),
     );
   });
 
-  it("a member can edit their own weekly schedule; other weekdays stay inherited", async () => {
+  it("a member can edit their own weekly schedule with multiple slots; other weekdays stay inherited", async () => {
     const member = await createTestUser(prisma);
     const token = await login(app, member.email, member.password);
 
     const update = await request(app.getHttpServer())
       .patch("/api/attendance/me/weekly")
       .set("Authorization", `Bearer ${token}`)
-      .send({ days: [{ weekday: "WEDNESDAY", attends: true, startTime: "14:00", endTime: "18:00" }] })
+      .send({
+        days: [
+          {
+            weekday: "WEDNESDAY",
+            attends: true,
+            slots: [
+              { startTime: "10:00", endTime: "12:00" },
+              { startTime: "14:00", endTime: "18:00" },
+            ],
+          },
+        ],
+      })
       .expect(200);
 
     expect(update.body.days).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ weekday: "WEDNESDAY", startTime: "14:00", endTime: "18:00", isInherited: false }),
-        expect.objectContaining({ weekday: "MONDAY", startTime: "12:00", endTime: "20:00", isInherited: true }),
-        expect.objectContaining({ weekday: "FRIDAY", startTime: "12:00", endTime: "20:00", isInherited: true }),
+        expect.objectContaining({
+          weekday: "WEDNESDAY",
+          slots: [
+            { startTime: "10:00", endTime: "12:00" },
+            { startTime: "14:00", endTime: "18:00" },
+          ],
+          isInherited: false,
+        }),
+        expect.objectContaining({
+          weekday: "MONDAY",
+          slots: [{ startTime: "12:00", endTime: "20:00" }],
+          isInherited: true,
+        }),
+        expect.objectContaining({
+          weekday: "FRIDAY",
+          slots: [{ startTime: "12:00", endTime: "20:00" }],
+          isInherited: true,
+        }),
       ]),
     );
 
@@ -92,8 +117,57 @@ describe("Attendance (integration)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
     expect(refetched.body.days).toEqual(
-      expect.arrayContaining([expect.objectContaining({ weekday: "WEDNESDAY", startTime: "14:00", endTime: "18:00" })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          weekday: "WEDNESDAY",
+          slots: [
+            { startTime: "10:00", endTime: "12:00" },
+            { startTime: "14:00", endTime: "18:00" },
+          ],
+        }),
+      ]),
     );
+  });
+
+  it("resolves multiple slots from the weekly default on a future occurrence of that weekday", async () => {
+    const member = await createTestUser(prisma);
+    const token = await login(app, member.email, member.password);
+    const today = todayInTimezone(OFFICE_TIMEZONE);
+    const wednesday = nextWeekdayOnOrAfter(today, 3);
+    const laterWednesday = nextWeekdayOnOrAfter(
+      new Date(new Date(`${wednesday}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      3,
+    );
+
+    await request(app.getHttpServer())
+      .patch("/api/attendance/me/weekly")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        days: [
+          {
+            weekday: "WEDNESDAY",
+            attends: true,
+            slots: [
+              { startTime: "10:00", endTime: "12:00" },
+              { startTime: "14:00", endTime: "18:00" },
+            ],
+          },
+        ],
+      })
+      .expect(200);
+
+    const effective = await request(app.getHttpServer())
+      .get(`/api/attendance/me/effective?from=${laterWednesday}&to=${laterWednesday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(effective.body.days[0]).toMatchObject({
+      status: "ATTENDING",
+      enteredSlots: [
+        { startTime: "10:00", endTime: "12:00" },
+        { startTime: "14:00", endTime: "18:00" },
+      ],
+    });
   });
 
   it("a member's date exception overrides only that date, leaving future weekly defaults intact", async () => {
@@ -109,7 +183,7 @@ describe("Attendance (integration)", () => {
     await request(app.getHttpServer())
       .put(`/api/attendance/me/exceptions/${friday}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ status: "NOT_ATTENDING", startTime: null, endTime: null })
+      .send({ status: "NOT_ATTENDING", slots: [] })
       .expect(200);
 
     const effective = await request(app.getHttpServer())
@@ -119,45 +193,189 @@ describe("Attendance (integration)", () => {
 
     const exceptionDay = effective.body.days.find((d: { date: string }) => d.date === friday);
     const otherFriday = effective.body.days.find((d: { date: string }) => d.date === laterFriday);
-    expect(exceptionDay).toMatchObject({ status: "NOT_ATTENDING" });
-    expect(otherFriday).toMatchObject({ status: "ATTENDING", enteredStartTime: "12:00", enteredEndTime: "20:00" });
+    expect(exceptionDay).toMatchObject({ status: "NOT_ATTENDING", isCustomized: true });
+    expect(otherFriday).toMatchObject({
+      status: "ATTENDING",
+      isCustomized: false,
+      enteredSlots: [{ startTime: "12:00", endTime: "20:00" }],
+    });
   });
 
-  it("rejects invalid attendance intervals: hours required for ATTENDING/NOT_SURE, forbidden for NOT_ATTENDING", async () => {
+  it("resolves multiple slots from a date-specific change", async () => {
+    const member = await createTestUser(prisma);
+    const token = await login(app, member.email, member.password);
+    const today = todayInTimezone(OFFICE_TIMEZONE);
+    const monday = nextWeekdayOnOrAfter(today, 1);
+
+    await request(app.getHttpServer())
+      .put(`/api/attendance/me/exceptions/${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        status: "ATTENDING",
+        slots: [
+          { startTime: "09:00", endTime: "11:00" },
+          { startTime: "13:00", endTime: "17:00" },
+        ],
+      })
+      .expect(200);
+
+    const effective = await request(app.getHttpServer())
+      .get(`/api/attendance/me/effective?from=${monday}&to=${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(effective.body.days[0]).toMatchObject({
+      status: "ATTENDING",
+      isCustomized: true,
+      enteredSlots: [
+        { startTime: "09:00", endTime: "11:00" },
+        { startTime: "13:00", endTime: "17:00" },
+      ],
+    });
+  });
+
+  it("resets a date-specific change back to the weekly default", async () => {
+    const member = await createTestUser(prisma);
+    const token = await login(app, member.email, member.password);
+    const today = todayInTimezone(OFFICE_TIMEZONE);
+    const monday = nextWeekdayOnOrAfter(today, 1);
+
+    await request(app.getHttpServer())
+      .put(`/api/attendance/me/exceptions/${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ status: "NOT_ATTENDING", slots: [] })
+      .expect(200);
+
+    let effective = await request(app.getHttpServer())
+      .get(`/api/attendance/me/effective?from=${monday}&to=${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(effective.body.days[0]).toMatchObject({ status: "NOT_ATTENDING", isCustomized: true });
+
+    await request(app.getHttpServer())
+      .delete(`/api/attendance/me/exceptions/${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    effective = await request(app.getHttpServer())
+      .get(`/api/attendance/me/effective?from=${monday}&to=${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(effective.body.days[0]).toMatchObject({
+      status: "ATTENDING",
+      isCustomized: false,
+      enteredSlots: [{ startTime: "12:00", endTime: "20:00" }],
+    });
+  });
+
+  it("does not retain stale slots after switching a date to Not attending", async () => {
+    const member = await createTestUser(prisma);
+    const token = await login(app, member.email, member.password);
+    const today = todayInTimezone(OFFICE_TIMEZONE);
+    const monday = nextWeekdayOnOrAfter(today, 1);
+
+    await request(app.getHttpServer())
+      .put(`/api/attendance/me/exceptions/${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        status: "ATTENDING",
+        slots: [
+          { startTime: "09:00", endTime: "11:00" },
+          { startTime: "13:00", endTime: "17:00" },
+        ],
+      })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .put(`/api/attendance/me/exceptions/${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ status: "NOT_ATTENDING", slots: [] })
+      .expect(200);
+
+    const effective = await request(app.getHttpServer())
+      .get(`/api/attendance/me/effective?from=${monday}&to=${monday}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(effective.body.days[0]).toMatchObject({ status: "NOT_ATTENDING", enteredSlots: [] });
+  });
+
+  it("rejects invalid attendance slots: required for ATTENDING/NOT_SURE, forbidden for NOT_ATTENDING, end after start", async () => {
     const member = await createTestUser(prisma);
     const token = await login(app, member.email, member.password);
     const today = todayInTimezone(OFFICE_TIMEZONE);
 
-    const missingHours = await request(app.getHttpServer())
+    const missingSlots = await request(app.getHttpServer())
       .put(`/api/attendance/me/exceptions/${today}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ status: "ATTENDING", startTime: null, endTime: null })
+      .send({ status: "ATTENDING", slots: [] })
       .expect(400);
-    expect(missingHours.body.code).toBe("VALIDATION_ERROR");
+    expect(missingSlots.body.code).toBe("VALIDATION_ERROR");
 
-    const notSureMissingHours = await request(app.getHttpServer())
+    const notSureMissingSlots = await request(app.getHttpServer())
       .put(`/api/attendance/me/exceptions/${today}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ status: "NOT_SURE", startTime: null, endTime: null })
+      .send({ status: "NOT_SURE", slots: [] })
       .expect(400);
-    expect(notSureMissingHours.body.code).toBe("VALIDATION_ERROR");
+    expect(notSureMissingSlots.body.code).toBe("VALIDATION_ERROR");
 
-    const strayHours = await request(app.getHttpServer())
+    const straySlots = await request(app.getHttpServer())
       .put(`/api/attendance/me/exceptions/${today}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ status: "NOT_ATTENDING", startTime: "12:00", endTime: "13:00" })
+      .send({ status: "NOT_ATTENDING", slots: [{ startTime: "12:00", endTime: "13:00" }] })
       .expect(400);
-    expect(strayHours.body.code).toBe("VALIDATION_ERROR");
+    expect(straySlots.body.code).toBe("VALIDATION_ERROR");
 
     const endBeforeStart = await request(app.getHttpServer())
       .put(`/api/attendance/me/exceptions/${today}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ status: "ATTENDING", startTime: "18:00", endTime: "12:00" })
+      .send({ status: "ATTENDING", slots: [{ startTime: "18:00", endTime: "12:00" }] })
       .expect(400);
     expect(endBeforeStart.body.code).toBe("VALIDATION_ERROR");
+
+    const overlapping = await request(app.getHttpServer())
+      .put(`/api/attendance/me/exceptions/${today}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        status: "ATTENDING",
+        slots: [
+          { startTime: "10:00", endTime: "13:00" },
+          { startTime: "12:00", endTime: "18:00" },
+        ],
+      })
+      .expect(400);
+    expect(overlapping.body.code).toBe("VALIDATION_ERROR");
+
+    const duplicate = await request(app.getHttpServer())
+      .put(`/api/attendance/me/exceptions/${today}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        status: "ATTENDING",
+        slots: [
+          { startTime: "10:00", endTime: "12:00" },
+          { startTime: "10:00", endTime: "12:00" },
+        ],
+      })
+      .expect(400);
+    expect(duplicate.body.code).toBe("VALIDATION_ERROR");
+
+    const touching = await request(app.getHttpServer())
+      .put(`/api/attendance/me/exceptions/${today}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        status: "ATTENDING",
+        slots: [
+          { startTime: "10:00", endTime: "12:00" },
+          { startTime: "12:00", endTime: "14:00" },
+        ],
+      })
+      .expect(200);
+    expect(touching.body.slots).toEqual([
+      { startTime: "10:00", endTime: "12:00" },
+      { startTime: "12:00", endTime: "14:00" },
+    ]);
   });
 
-  it("stores out-of-hours attendance as entered and reports the clamped public interval", async () => {
+  it("stores out-of-hours attendance as entered and reports the clamped public slots", async () => {
     const member = await createTestUser(prisma);
     const token = await login(app, member.email, member.password);
     const today = todayInTimezone(OFFICE_TIMEZONE);
@@ -167,7 +385,7 @@ describe("Attendance (integration)", () => {
     await request(app.getHttpServer())
       .put(`/api/attendance/me/exceptions/${monday}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ status: "ATTENDING", startTime: "09:00", endTime: "14:00" })
+      .send({ status: "ATTENDING", slots: [{ startTime: "09:00", endTime: "14:00" }] })
       .expect(200);
 
     const partial = await request(app.getHttpServer())
@@ -175,10 +393,8 @@ describe("Attendance (integration)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
     expect(partial.body.days[0]).toMatchObject({
-      enteredStartTime: "09:00",
-      enteredEndTime: "14:00",
-      publicStartTime: "12:00",
-      publicEndTime: "14:00",
+      enteredSlots: [{ startTime: "09:00", endTime: "14:00" }],
+      publicSlots: [{ startTime: "12:00", endTime: "14:00" }],
       isClamped: true,
     });
 
@@ -186,7 +402,7 @@ describe("Attendance (integration)", () => {
     await request(app.getHttpServer())
       .put(`/api/attendance/me/exceptions/${monday}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ status: "ATTENDING", startTime: "07:00", endTime: "09:00" })
+      .send({ status: "ATTENDING", slots: [{ startTime: "07:00", endTime: "09:00" }] })
       .expect(200);
 
     const noOverlap = await request(app.getHttpServer())
@@ -194,10 +410,8 @@ describe("Attendance (integration)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
     expect(noOverlap.body.days[0]).toMatchObject({
-      enteredStartTime: "07:00",
-      enteredEndTime: "09:00",
-      publicStartTime: null,
-      publicEndTime: null,
+      enteredSlots: [{ startTime: "07:00", endTime: "09:00" }],
+      publicSlots: [],
       isClamped: true,
     });
   });
@@ -218,13 +432,13 @@ describe("Attendance (integration)", () => {
     await request(app.getHttpServer())
       .patch(`/api/attendance/members/${member.id}/weekly`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ days: [{ weekday: "TUESDAY", attends: true, startTime: "10:00", endTime: "12:00" }] })
+      .send({ days: [{ weekday: "TUESDAY", attends: true, slots: [{ startTime: "10:00", endTime: "12:00" }] }] })
       .expect(200);
 
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${member.id}/exceptions/${today}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "NOT_SURE", startTime: "12:00", endTime: "16:00" })
+      .send({ status: "NOT_SURE", slots: [{ startTime: "12:00", endTime: "16:00" }] })
       .expect(200);
 
     // A plain member cannot reach another member's attendance endpoints at all.
@@ -236,13 +450,13 @@ describe("Attendance (integration)", () => {
     await request(app.getHttpServer())
       .patch(`/api/attendance/members/${otherMember.id}/weekly`)
       .set("Authorization", `Bearer ${memberToken}`)
-      .send({ days: [{ weekday: "TUESDAY", attends: true, startTime: "10:00", endTime: "12:00" }] })
+      .send({ days: [{ weekday: "TUESDAY", attends: true, slots: [{ startTime: "10:00", endTime: "12:00" }] }] })
       .expect(403);
 
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${otherMember.id}/exceptions/${today}`)
       .set("Authorization", `Bearer ${memberToken}`)
-      .send({ status: "NOT_SURE", startTime: "12:00", endTime: "16:00" })
+      .send({ status: "NOT_SURE", slots: [{ startTime: "12:00", endTime: "16:00" }] })
       .expect(403);
   });
 
@@ -258,12 +472,12 @@ describe("Attendance (integration)", () => {
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${admin.id}/exceptions/${friday}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "NOT_ATTENDING", startTime: null, endTime: null })
+      .send({ status: "NOT_ATTENDING", slots: [] })
       .expect(200);
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${member.id}/exceptions/${friday}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "NOT_SURE", startTime: "12:00", endTime: "16:00" })
+      .send({ status: "NOT_SURE", slots: [{ startTime: "12:00", endTime: "16:00" }] })
       .expect(200);
 
     // Close Monday entirely — should never warn regardless of attendance.
@@ -275,12 +489,12 @@ describe("Attendance (integration)", () => {
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${admin.id}/exceptions/${monday}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "NOT_ATTENDING", startTime: null, endTime: null })
+      .send({ status: "NOT_ATTENDING", slots: [] })
       .expect(200);
     await request(app.getHttpServer())
       .put(`/api/attendance/members/${member.id}/exceptions/${monday}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ status: "NOT_ATTENDING", startTime: null, endTime: null })
+      .send({ status: "NOT_ATTENDING", slots: [] })
       .expect(200);
 
     const warnings = await request(app.getHttpServer())

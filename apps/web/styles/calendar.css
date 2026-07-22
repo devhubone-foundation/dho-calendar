@@ -716,6 +716,17 @@
   border-radius: var(--dho-radius-pill);
   background: var(--dho-status-open-bg);
 }
+.dho-attn-member-row {
+  cursor: pointer;
+  border-radius: var(--dho-radius-sm);
+}
+.dho-attn-member-row:hover {
+  background: var(--dho-color-paper);
+}
+.dho-attn-member-row:focus-visible {
+  outline: 2px solid var(--dho-status-today-ring);
+  outline-offset: 2px;
+}
 .dho-attn-member-identity {
   display: flex;
   align-items: center;
@@ -785,6 +796,105 @@
   }
 }
 
+/* Per-attendee modal (PRODUCT_BLUEPRINT.md §16.1) — opened from one
+ * attendee's stripe/row. The status/time band intentionally reuses the same
+ * dho-status-attending and dho-status-not-sure tokens as the timeline
+ * stripe above, so this reads as a zoomed-in view of the stripe just
+ * tapped. */
+.dho-attn-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-4);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dho-attn-modal {
+    animation: dho-attn-modal-in 0.18s ease-out;
+  }
+}
+@keyframes dho-attn-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.dho-attn-modal-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-3);
+}
+.dho-attn-modal-identity .dho-avatar {
+  flex-shrink: 0;
+}
+.dho-attn-modal-identity-text {
+  min-width: 0;
+}
+.dho-attn-modal-name {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.dho-attn-modal-role {
+  margin: var(--dho-space-1) 0 0;
+  font-size: 0.875rem;
+  color: var(--dho-color-navy);
+  overflow-wrap: anywhere;
+}
+.dho-attn-modal-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  border-radius: var(--dho-radius-md);
+  padding: var(--dho-space-3) var(--dho-space-4);
+  background: var(--dho-status-attending-bg);
+  color: var(--dho-status-attending-text);
+}
+.dho-attn-modal-status--not-sure {
+  background: var(--dho-status-not-sure-bg);
+  color: var(--dho-status-not-sure-text);
+  border: 2px dashed var(--dho-status-not-sure-border);
+}
+.dho-attn-modal-status-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dho-attn-modal-status-time {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.dho-attn-modal-contact {
+  align-self: flex-start;
+}
+@media (max-width: 30rem) {
+  .dho-attn-modal {
+    gap: var(--dho-space-3);
+  }
+  .dho-attn-modal-identity {
+    gap: var(--dho-space-2);
+  }
+  .dho-attn-modal-status {
+    padding: var(--dho-space-2) var(--dho-space-3);
+  }
+  .dho-attn-modal-status-time {
+    font-size: 1.25rem;
+  }
+  /* Smaller CTA on narrow screens rather than the full default button
+   * size — the icon + short label stay legible while the button takes up
+   * noticeably less space. */
+  .dho-attn-modal-contact {
+    padding: var(--dho-space-1) var(--dho-space-4);
+    min-height: 2.25rem;
+    font-size: 0.875rem;
+  }
+}
+
 /* Public calendar Events view (PRODUCT_BLUEPRINT.md §15.1.2): prev/next
  * month icon controls replace the old text Previous/Today/Next buttons —
  * there is no view switcher on the public calendar. */
@@ -804,4 +914,128 @@
 }
 .dho-cal-month-nav-label {
   font-weight: 700;
+}
+
+/* Admin attendance page: single-day view (Issue #19). */
+.dho-attday-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dho-space-3);
+  margin-bottom: var(--dho-space-3);
+}
+.dho-attday-heading {
+  text-align: center;
+}
+.dho-attday-heading h1 {
+  margin: 0;
+}
+.dho-attday-date {
+  margin: 0;
+  color: var(--dho-color-navy);
+}
+.dho-attday-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+  margin-top: var(--dho-space-3);
+}
+.dho-attday-status-headline {
+  display: flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0;
+}
+.dho-attday-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dho-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dho-attday-slots li {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--dho-radius-sm);
+  background: var(--dho-status-attending-bg);
+  color: var(--dho-status-attending-text);
+  font-variant-numeric: tabular-nums;
+}
+.dho-attday-conflict {
+  margin: 0;
+  color: var(--dho-color-navy);
+  font-size: 0.9rem;
+}
+.dho-attday-officehours {
+  margin: 0;
+  color: var(--dho-color-navy);
+  font-size: 0.9rem;
+}
+
+/* Reusable multi-slot time editor (daily + weekly attendance modals). */
+.dho-slot-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+}
+.dho-slot-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-1, 0.25rem);
+}
+/* Start time / end time / remove button. Distinct from the bilingual
+ * EN/BG `.dho-field-pair` (Issue #12) since it holds 3 items, not 2: that
+ * class's 2-column desktop grid left the remove button orphaned on its own
+ * row instead of beside the end-time field. */
+.dho-slot-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--dho-space-2);
+}
+@media (min-width: 40rem) {
+  .dho-slot-fields {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+    gap: var(--dho-space-4);
+  }
+}
+.dho-status-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dho-space-3);
+}
+.dho-status-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  min-height: var(--dho-touch-target);
+  font-weight: normal;
+  cursor: pointer;
+}
+
+/* Default weekly-schedule modal: one row per weekday. */
+.dho-weekday-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dho-space-2);
+  padding: var(--dho-space-3) 0;
+  border-bottom: 1px solid var(--dho-color-grey);
+}
+.dho-weekday-row:last-of-type {
+  border-bottom: none;
+}
+.dho-weekday-row-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dho-space-2);
+}
+.dho-weekday-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dho-space-2);
+  font-weight: normal;
 }
