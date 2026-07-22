@@ -4,6 +4,7 @@ import {
   type AttendanceException,
   type AttendanceExceptionInput,
   type AttendanceExceptionListResponse,
+  type AttendanceSlot,
   type AttendanceStatus,
   type AttendanceWarning,
   type AttendanceWarningListResponse,
@@ -40,6 +41,8 @@ import {
 } from "./attendance.resolver";
 import { evaluateDayWarning } from "./attendance.warnings";
 
+const SLOT_ORDER = { orderBy: { sortOrder: "asc" as const } };
+
 /** One active member's clamped attendance on one date — the public-calendar
  * composition unit (see `resolveActiveMembersForRange`). */
 export interface ActiveMemberAttendanceDay {
@@ -47,8 +50,7 @@ export interface ActiveMemberAttendanceDay {
   /** "YYYY-MM-DD" */
   date: string;
   status: AttendanceStatus;
-  publicStartTime: string | null;
-  publicEndTime: string | null;
+  publicSlots: AttendanceSlot[];
 }
 
 @Injectable()
@@ -76,11 +78,14 @@ export class AttendanceService {
         return { weekday, ...explicit, isInherited: false };
       }
       const inherited = resolveOfficeDefaultForWeekday(officeDefaultVersions, weekday, memberCreatedAt);
+      const inheritedSlots: AttendanceSlot[] =
+        inherited.isOpen && inherited.startTime && inherited.endTime
+          ? [{ startTime: inherited.startTime, endTime: inherited.endTime }]
+          : [];
       return {
         weekday,
         attends: inherited.isOpen,
-        startTime: inherited.startTime,
-        endTime: inherited.endTime,
+        slots: inheritedSlots,
         isInherited: true,
       };
     });
@@ -105,22 +110,30 @@ export class AttendanceService {
       return (
         !currentDay ||
         currentDay.attends !== day.attends ||
-        currentDay.startTime !== day.startTime ||
-        currentDay.endTime !== day.endTime
+        JSON.stringify(currentDay.slots) !== JSON.stringify(day.slots)
       );
     });
 
     if (changes.length > 0) {
-      await this.prisma.memberWeeklySchedule.createMany({
-        data: changes.map((change) => ({
-          userId,
-          weekday: change.weekday,
-          attends: change.attends,
-          startTime: change.startTime,
-          endTime: change.endTime,
-          effectiveFrom: toDateOnly(today),
-        })),
-      });
+      await this.prisma.$transaction(
+        changes.map((change) =>
+          this.prisma.memberWeeklySchedule.create({
+            data: {
+              userId,
+              weekday: change.weekday,
+              attends: change.attends,
+              effectiveFrom: toDateOnly(today),
+              slots: {
+                create: change.slots.map((slot, index) => ({
+                  startTime: slot.startTime,
+                  endTime: slot.endTime,
+                  sortOrder: index,
+                })),
+              },
+            },
+          }),
+        ),
+      );
 
       await this.audit.record({
         actorId,
@@ -140,6 +153,7 @@ export class AttendanceService {
     await this.getUserOrThrow(userId);
     const rows = await this.prisma.attendanceException.findMany({
       where: { userId, date: { gte: toDateOnly(from), lte: toDateOnly(to) } },
+      include: { slots: SLOT_ORDER },
       orderBy: { date: "asc" },
     });
     return { exceptions: rows.map(toAttendanceExceptionDto) };
@@ -156,16 +170,25 @@ export class AttendanceService {
       where: { userId_date: { userId, date: toDateOnly(date) } },
     });
 
+    const slotsData = input.slots.map((slot, index) => ({
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      sortOrder: index,
+    }));
+
     const row = await this.prisma.attendanceException.upsert({
       where: { userId_date: { userId, date: toDateOnly(date) } },
       create: {
         userId,
         date: toDateOnly(date),
         status: input.status,
-        startTime: input.startTime,
-        endTime: input.endTime,
+        slots: { create: slotsData },
       },
-      update: { status: input.status, startTime: input.startTime, endTime: input.endTime },
+      update: {
+        status: input.status,
+        slots: { deleteMany: {}, create: slotsData },
+      },
+      include: { slots: SLOT_ORDER },
     });
 
     await this.audit.record({
@@ -173,7 +196,7 @@ export class AttendanceService {
       action: existing ? "attendance.exception.updated" : "attendance.exception.created",
       targetType: "AttendanceException",
       targetId: row.id,
-      metadata: { userId, date, status: input.status, startTime: input.startTime, endTime: input.endTime },
+      metadata: { userId, date, status: input.status, slots: input.slots },
     });
 
     this.domainEvents.emit("attendance.changed", { userId, from: date, to: date });
@@ -181,6 +204,9 @@ export class AttendanceService {
     return toAttendanceExceptionDto(row);
   }
 
+  /** Removes a member's date-specific customization so the date falls back to
+   * the personal weekly default again — this is what the daily editor's "use
+   * my default schedule" action calls. */
   async deleteException(actorId: string, userId: string, date: string): Promise<void> {
     await this.getUserOrThrow(userId);
     const existing = await this.prisma.attendanceException.findUnique({
@@ -262,9 +288,10 @@ export class AttendanceService {
 
     const userIds = activeUsers.map((user) => user.id);
     const [weeklyRows, exceptionRows] = await Promise.all([
-      this.prisma.memberWeeklySchedule.findMany({ where: { userId: { in: userIds } } }),
+      this.prisma.memberWeeklySchedule.findMany({ where: { userId: { in: userIds } }, include: { slots: SLOT_ORDER } }),
       this.prisma.attendanceException.findMany({
         where: { userId: { in: userIds }, date: { gte: toDateOnly(today), lte: toDateOnly(to) } },
+        include: { slots: SLOT_ORDER },
       }),
     ]);
 
@@ -318,12 +345,14 @@ export class AttendanceService {
       this.officeSchedule.getDefaultVersions(),
       this.prisma.memberWeeklySchedule.findMany({
         where: { userId: { in: activeUsers.map((user) => user.id) } },
+        include: { slots: SLOT_ORDER },
       }),
       this.prisma.attendanceException.findMany({
         where: {
           userId: { in: activeUsers.map((user) => user.id) },
           date: { gte: toDateOnly(from), lte: toDateOnly(clampedTo) },
         },
+        include: { slots: SLOT_ORDER },
       }),
     ]);
 
@@ -346,8 +375,7 @@ export class AttendanceService {
           userId: user.id,
           date,
           status: clamped.status,
-          publicStartTime: clamped.publicStartTime,
-          publicEndTime: clamped.publicEndTime,
+          publicSlots: clamped.publicSlots,
         });
       }
     }
@@ -367,24 +395,36 @@ export class AttendanceService {
   }
 
   private async loadWeeklyVersions(userId: string): Promise<MemberWeeklyVersion[]> {
-    const rows = await this.prisma.memberWeeklySchedule.findMany({ where: { userId } });
+    const rows = await this.prisma.memberWeeklySchedule.findMany({
+      where: { userId },
+      include: { slots: SLOT_ORDER },
+    });
     return toWeeklyVersions(rows);
   }
 
   private async loadExceptionRows(userId: string, from: string, to: string): Promise<AttendanceExceptionRow[]> {
     const rows = await this.prisma.attendanceException.findMany({
       where: { userId, date: { gte: toDateOnly(from), lte: toDateOnly(to) } },
+      include: { slots: SLOT_ORDER },
     });
     return toExceptionRows(rows);
   }
+}
+
+interface SlotRow {
+  startTime: string;
+  endTime: string;
+}
+
+function toAttendanceSlots(slots: SlotRow[]): AttendanceSlot[] {
+  return slots.map((slot) => ({ startTime: slot.startTime, endTime: slot.endTime }));
 }
 
 function toWeeklyVersions(
   rows: {
     weekday: string;
     attends: boolean;
-    startTime: string | null;
-    endTime: string | null;
+    slots: SlotRow[];
     effectiveFrom: Date;
     createdAt: Date;
   }[],
@@ -392,37 +432,31 @@ function toWeeklyVersions(
   return rows.map((row) => ({
     weekday: row.weekday as Weekday,
     attends: row.attends,
-    startTime: row.startTime,
-    endTime: row.endTime,
+    slots: toAttendanceSlots(row.slots),
     effectiveFrom: fromDateOnly(row.effectiveFrom),
     createdAt: row.createdAt.toISOString(),
   }));
 }
 
-function toExceptionRows(
-  rows: { date: Date; status: string; startTime: string | null; endTime: string | null }[],
-): AttendanceExceptionRow[] {
+function toExceptionRows(rows: { date: Date; status: string; slots: SlotRow[] }[]): AttendanceExceptionRow[] {
   return rows.map((row) => ({
     date: fromDateOnly(row.date),
     status: row.status as AttendanceStatus,
-    startTime: row.startTime,
-    endTime: row.endTime,
+    slots: toAttendanceSlots(row.slots),
   }));
 }
 
 function toAttendanceExceptionDto(row: {
   date: Date;
   status: string;
-  startTime: string | null;
-  endTime: string | null;
+  slots: SlotRow[];
   createdAt: Date;
   updatedAt: Date;
 }): AttendanceException {
   return {
     date: fromDateOnly(row.date),
     status: row.status as AttendanceStatus,
-    startTime: row.startTime,
-    endTime: row.endTime,
+    slots: toAttendanceSlots(row.slots),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

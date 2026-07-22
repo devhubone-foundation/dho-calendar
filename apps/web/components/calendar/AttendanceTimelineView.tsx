@@ -112,35 +112,38 @@ export function AttendanceTimelineView({ days, locale }: AttendanceTimelineViewP
                   </div>
                 ) : null}
 
-                {members.map(({ member, uncertain }) => {
-                  const left = percentOffset(timeOfDayToMinutes(member.startTime), range);
-                  const width = Math.max(4, percentOffset(timeOfDayToMinutes(member.endTime), range) - left);
-                  return (
-                    <div key={member.contactEmail} className="dho-attn-member-row">
-                      <div className="dho-attn-member-identity">
-                        <Avatar
-                          name={member.fullName}
-                          src={member.profileImagePath ? resolveUploadUrl(member.profileImagePath) : null}
-                          size={28}
-                        />
-                        <span className="dho-attn-member-name">{member.fullName}</span>
-                      </div>
-                      <div className="dho-attn-member-track">
-                        <div
-                          className={cn("dho-attn-member-stripe", uncertain && "dho-attn-member-stripe--not-sure")}
-                          style={{ left: `${left}%`, width: `${width}%` }}
-                          title={`${member.fullName} · ${member.startTime}–${member.endTime}${
-                            uncertain ? ` (${dictionary.calendar.notSureBadge})` : ""
-                          }`}
-                        >
-                          <span className="dho-attn-member-stripe-time">
-                            {member.startTime}–{member.endTime}
-                          </span>
-                        </div>
-                      </div>
+                {members.map(({ member, uncertain }) => (
+                  <div key={member.contactEmail} className="dho-attn-member-row">
+                    <div className="dho-attn-member-identity">
+                      <Avatar
+                        name={member.fullName}
+                        src={member.profileImagePath ? resolveUploadUrl(member.profileImagePath) : null}
+                        size={28}
+                      />
+                      <span className="dho-attn-member-name">{member.fullName}</span>
                     </div>
-                  );
-                })}
+                    <div className="dho-attn-member-track">
+                      {member.slots.map((slot, index) => {
+                        const left = percentOffset(timeOfDayToMinutes(slot.startTime), range);
+                        const width = Math.max(4, percentOffset(timeOfDayToMinutes(slot.endTime), range) - left);
+                        return (
+                          <div
+                            key={index}
+                            className={cn("dho-attn-member-stripe", uncertain && "dho-attn-member-stripe--not-sure")}
+                            style={{ left: `${left}%`, width: `${width}%` }}
+                            title={`${member.fullName} · ${slot.startTime}–${slot.endTime}${
+                              uncertain ? ` (${dictionary.calendar.notSureBadge})` : ""
+                            }`}
+                          >
+                            <span className="dho-attn-member-stripe-time">
+                              {slot.startTime}–{slot.endTime}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </section>

@@ -143,38 +143,71 @@ model OfficeScheduleException {
 // OfficeScheduleDefault. Until a member has any rows for a given weekday, the
 // resolver falls back to the office default as of the member's account
 // creation date (see AttendanceService) rather than materializing a copy.
+// Time ranges live on MemberWeeklyScheduleSlot (one weekday version can carry
+// multiple non-overlapping slots, e.g. 10:00-12:00 and 14:00-18:00); a
+// version with attends=false simply has zero slot rows.
 model MemberWeeklySchedule {
   id            String   @id @default(cuid())
   userId        String
   weekday       Weekday
   attends       Boolean
-  startTime     String?
-  endTime       String?
   effectiveFrom DateTime @db.Date
   createdAt     DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slots MemberWeeklyScheduleSlot[]
 
   @@index([userId, weekday, effectiveFrom])
   @@map("member_weekly_schedules")
 }
 
+// One attendance time range belonging to a single MemberWeeklySchedule
+// version. sortOrder preserves the order the member entered slots in.
+model MemberWeeklyScheduleSlot {
+  id         String @id @default(cuid())
+  scheduleId String
+  startTime  String
+  endTime    String
+  sortOrder  Int
+
+  schedule MemberWeeklySchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@map("member_weekly_schedule_slots")
+}
+
 // A member's date-specific override; always wins over their weekly schedule
-// for that exact date (PRODUCT_BLUEPRINT.md §12.6).
+// for that exact date (PRODUCT_BLUEPRINT.md §12.6). Time ranges live on
+// AttendanceExceptionSlot (multiple non-overlapping slots per date); a
+// NOT_ATTENDING exception simply has zero slot rows.
 model AttendanceException {
   id        String           @id @default(cuid())
   userId    String
   date      DateTime         @db.Date
   status    AttendanceStatus
-  startTime String?
-  endTime   String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slots AttendanceExceptionSlot[]
 
   @@unique([userId, date])
   @@map("attendance_exceptions")
+}
+
+// One attendance time range belonging to a single AttendanceException.
+// sortOrder preserves the order the member entered slots in.
+model AttendanceExceptionSlot {
+  id          String @id @default(cuid())
+  exceptionId String
+  startTime   String
+  endTime     String
+  sortOrder   Int
+
+  exception AttendanceException @relation(fields: [exceptionId], references: [id], onDelete: Cascade)
+
+  @@index([exceptionId])
+  @@map("attendance_exception_slots")
 }
 
 enum EventRecurrenceFrequency {

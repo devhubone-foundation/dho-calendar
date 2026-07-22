@@ -129,17 +129,22 @@ const OFFICE_DEFAULTS: OfficeDefaultSeed[] = [
   { weekday: "SUNDAY", isOpen: false, startTime: null, endTime: null },
 ];
 
+interface SeedSlot {
+  startTime: string;
+  endTime: string;
+}
+
 async function upsertAttendanceException(
   userId: string,
   date: string,
   status: AttendanceStatus,
-  startTime: string | null,
-  endTime: string | null,
+  slots: SeedSlot[],
 ): Promise<void> {
+  const slotsData = slots.map((slot, index) => ({ ...slot, sortOrder: index }));
   await prisma.attendanceException.upsert({
     where: { userId_date: { userId, date: toDateOnly(date) } },
-    update: { status, startTime, endTime },
-    create: { userId, date: toDateOnly(date), status, startTime, endTime },
+    update: { status, slots: { deleteMany: {}, create: slotsData } },
+    create: { userId, date: toDateOnly(date), status, slots: { create: slotsData } },
   });
 }
 
@@ -215,9 +220,8 @@ async function main() {
         userId: kalinaId,
         weekday: "WEDNESDAY",
         attends: true,
-        startTime: "14:00",
-        endTime: "18:00",
         effectiveFrom: toDateOnly("2020-01-01"),
+        slots: { create: [{ startTime: "14:00", endTime: "18:00", sortOrder: 0 }] },
       },
     });
   }
@@ -232,23 +236,31 @@ async function main() {
   const warningClearFriday = addDaysIso(notSureOnlyFriday, 7);
   const closedWednesday = addDaysIso(nextWeekdayOnOrAfter(today, 3), 7);
 
-  // Confirmed attendance exception (explicit override, different hours than
-  // the 12:00-20:00 default, so it's visibly a real saved exception).
-  await upsertAttendanceException(memberId, confirmedMonday, "ATTENDING", "13:00", "19:00");
+  // Confirmed attendance exception with two non-overlapping slots (a real
+  // saved date-specific change, and a demo of the multi-slot capability —
+  // PRODUCT_BLUEPRINT.md §12.6), different hours than the 12:00-20:00 default.
+  await upsertAttendanceException(memberId, confirmedMonday, "ATTENDING", [
+    { startTime: "10:00", endTime: "12:00" },
+    { startTime: "14:00", endTime: "19:00" },
+  ]);
 
   // A working Friday with zero confirmed attendees: everyone active is
   // NOT_ATTENDING except Kalina, who is NOT_SURE — demonstrates both the
   // "no confirmed attendee" warning and the "Not sure alone still warns" rule.
-  await upsertAttendanceException(adminId, notSureOnlyFriday, "NOT_ATTENDING", null, null);
-  await upsertAttendanceException(memberId, notSureOnlyFriday, "NOT_ATTENDING", null, null);
-  await upsertAttendanceException(kalinaId, notSureOnlyFriday, "NOT_SURE", "12:00", "16:00");
+  await upsertAttendanceException(adminId, notSureOnlyFriday, "NOT_ATTENDING", []);
+  await upsertAttendanceException(memberId, notSureOnlyFriday, "NOT_ATTENDING", []);
+  await upsertAttendanceException(kalinaId, notSureOnlyFriday, "NOT_SURE", [
+    { startTime: "12:00", endTime: "16:00" },
+  ]);
 
   // The following Friday: same starting point (admin/member NOT_ATTENDING),
   // but Kalina confirms ATTENDING instead of NOT_SURE — demonstrates the
   // warning clearing once a single active member is confirmed.
-  await upsertAttendanceException(adminId, warningClearFriday, "NOT_ATTENDING", null, null);
-  await upsertAttendanceException(memberId, warningClearFriday, "NOT_ATTENDING", null, null);
-  await upsertAttendanceException(kalinaId, warningClearFriday, "ATTENDING", "12:00", "16:00");
+  await upsertAttendanceException(adminId, warningClearFriday, "NOT_ATTENDING", []);
+  await upsertAttendanceException(memberId, warningClearFriday, "NOT_ATTENDING", []);
+  await upsertAttendanceException(kalinaId, warningClearFriday, "ATTENDING", [
+    { startTime: "12:00", endTime: "16:00" },
+  ]);
 
   // A date-specific office-hours change and a one-off closure, each isolated
   // to a single date without touching the weekly defaults.
@@ -330,7 +342,7 @@ async function main() {
     );
   }
   console.log("Office schedule / attendance demo dates:");
-  console.log(`  Confirmed ATTENDING exception (member@...): ${confirmedMonday}`);
+  console.log(`  Confirmed ATTENDING exception with two slots (member@...): ${confirmedMonday}`);
   console.log(`  No-confirmed-attendee warning (Not sure only): ${notSureOnlyFriday}`);
   console.log(`  Warning cleared (Kalina confirms ATTENDING): ${warningClearFriday}`);
   console.log(`  Changed office hours (10:00-18:00): ${changedHoursMonday}`);

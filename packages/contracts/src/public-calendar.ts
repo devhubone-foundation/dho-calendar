@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { attendanceSlotSchema } from "./attendance";
 import { calendarDateSchema, dateRangeQuerySchema } from "./calendar-date";
 import { eventOccurrenceSchema } from "./events";
 import { timeOfDaySchema } from "./office-schedule";
@@ -12,16 +13,16 @@ export type PublicCalendarQuery = z.infer<typeof publicCalendarQuerySchema>;
 /** One member's publicly-visible attendance on a date. No internal user ID
  * (PRODUCT_BLUEPRINT.md §17: no internal identifiers publicly) — the contact
  * email is itself the intended public field and doubles as a stable list key.
- * `startTime`/`endTime` are always the clamped public interval (never the
- * entered interval), per PRODUCT_BLUEPRINT.md §12.7/ARCHITECTURE.md §11. */
+ * `slots` are always the clamped public slots (never the entered slots),
+ * per PRODUCT_BLUEPRINT.md §12.7/ARCHITECTURE.md §11; always at least one
+ * entry, since a member with zero overlapping slots is excluded upstream. */
 export const publicMemberAttendanceSchema = z.object({
   fullName: z.string(),
   profileImagePath: z.string().nullable(),
   qualificationBg: z.string(),
   qualificationEn: z.string(),
   contactEmail: z.string(),
-  startTime: timeOfDaySchema,
-  endTime: timeOfDaySchema,
+  slots: z.array(attendanceSlotSchema).min(1),
 });
 export type PublicMemberAttendance = z.infer<typeof publicMemberAttendanceSchema>;
 

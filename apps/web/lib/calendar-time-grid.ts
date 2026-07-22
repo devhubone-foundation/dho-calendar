@@ -46,8 +46,10 @@ export function computeWeekTimeRange(days: PublicCalendarDay[], occurrences: Eve
       max = Math.max(max, timeOfDayToMinutes(day.office.endTime));
     }
     for (const member of [...day.confirmedAttendees, ...day.uncertainAttendees]) {
-      min = Math.min(min, timeOfDayToMinutes(member.startTime));
-      max = Math.max(max, timeOfDayToMinutes(member.endTime));
+      for (const slot of member.slots) {
+        min = Math.min(min, timeOfDayToMinutes(slot.startTime));
+        max = Math.max(max, timeOfDayToMinutes(slot.endTime));
+      }
     }
   }
   for (const occurrence of occurrences) {

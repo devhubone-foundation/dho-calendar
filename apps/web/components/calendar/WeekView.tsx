@@ -147,51 +147,49 @@ export function WeekView({ anchorDateKey, occurrences, days, locale, onSelectDat
                     />
                   ) : null}
 
-                  {day?.confirmedAttendees.map((member) => {
-                    const top = minutesToOffsetRem(timeOfDayToMinutes(member.startTime), range);
-                    const height = Math.max(
-                      1.5,
-                      minutesToOffsetRem(timeOfDayToMinutes(member.endTime), range) - top,
-                    );
-                    return (
-                      <div
-                        key={member.contactEmail}
-                        className="dho-cal-week-attendee-block"
-                        style={{ top: `${top}rem`, height: `${height}rem` }}
-                        title={`${member.fullName} · ${member.startTime}–${member.endTime}`}
-                      >
-                        <Avatar
-                          name={member.fullName}
-                          src={member.profileImagePath ? resolveUploadUrl(member.profileImagePath) : null}
-                          size={16}
-                        />
-                        <span className="dho-cal-week-attendee-name">{member.fullName}</span>
-                      </div>
-                    );
-                  })}
+                  {day?.confirmedAttendees.flatMap((member) =>
+                    member.slots.map((slot, index) => {
+                      const top = minutesToOffsetRem(timeOfDayToMinutes(slot.startTime), range);
+                      const height = Math.max(1.5, minutesToOffsetRem(timeOfDayToMinutes(slot.endTime), range) - top);
+                      return (
+                        <div
+                          key={`${member.contactEmail}-${index}`}
+                          className="dho-cal-week-attendee-block"
+                          style={{ top: `${top}rem`, height: `${height}rem` }}
+                          title={`${member.fullName} · ${slot.startTime}–${slot.endTime}`}
+                        >
+                          <Avatar
+                            name={member.fullName}
+                            src={member.profileImagePath ? resolveUploadUrl(member.profileImagePath) : null}
+                            size={16}
+                          />
+                          <span className="dho-cal-week-attendee-name">{member.fullName}</span>
+                        </div>
+                      );
+                    }),
+                  )}
 
-                  {day?.uncertainAttendees.map((member) => {
-                    const top = minutesToOffsetRem(timeOfDayToMinutes(member.startTime), range);
-                    const height = Math.max(
-                      1.5,
-                      minutesToOffsetRem(timeOfDayToMinutes(member.endTime), range) - top,
-                    );
-                    return (
-                      <div
-                        key={member.contactEmail}
-                        className="dho-cal-week-attendee-block dho-cal-week-attendee-block--not-sure"
-                        style={{ top: `${top}rem`, height: `${height}rem` }}
-                        title={`${member.fullName} (${dictionary.calendar.notSureBadge}) · ${member.startTime}–${member.endTime}`}
-                      >
-                        <Avatar
-                          name={member.fullName}
-                          src={member.profileImagePath ? resolveUploadUrl(member.profileImagePath) : null}
-                          size={16}
-                        />
-                        <span className="dho-cal-week-attendee-name">{member.fullName}</span>
-                      </div>
-                    );
-                  })}
+                  {day?.uncertainAttendees.flatMap((member) =>
+                    member.slots.map((slot, index) => {
+                      const top = minutesToOffsetRem(timeOfDayToMinutes(slot.startTime), range);
+                      const height = Math.max(1.5, minutesToOffsetRem(timeOfDayToMinutes(slot.endTime), range) - top);
+                      return (
+                        <div
+                          key={`${member.contactEmail}-${index}`}
+                          className="dho-cal-week-attendee-block dho-cal-week-attendee-block--not-sure"
+                          style={{ top: `${top}rem`, height: `${height}rem` }}
+                          title={`${member.fullName} (${dictionary.calendar.notSureBadge}) · ${slot.startTime}–${slot.endTime}`}
+                        >
+                          <Avatar
+                            name={member.fullName}
+                            src={member.profileImagePath ? resolveUploadUrl(member.profileImagePath) : null}
+                            size={16}
+                          />
+                          <span className="dho-cal-week-attendee-name">{member.fullName}</span>
+                        </div>
+                      );
+                    }),
+                  )}
 
                   {timedOccurrences.map((occurrence) => {
                     const startMinutes = instantToOfficeMinutes(occurrence.startAt);
