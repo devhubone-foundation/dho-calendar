@@ -4,7 +4,11 @@ import { useEffect } from "react";
 import type { SocketEventName } from "@dho/contracts";
 import { io } from "socket.io-client";
 
-const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_ORIGIN ?? "";
+// Empty when NEXT_PUBLIC_WS_ORIGIN is unset (the intended production/Render
+// config, see render.yaml/Dockerfile.render): in that case we connect to the
+// page's own origin so Nginx proxies the /socket.io/ upgrade to the API on the
+// same host, mirroring the same-origin REST fallback in lib/auth/api-client.ts.
+const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_ORIGIN || undefined;
 
 const INVALIDATION_EVENTS: SocketEventName[] = [
   "office-schedule.changed",
@@ -26,7 +30,6 @@ const INVALIDATION_EVENTS: SocketEventName[] = [
  */
 export function useRealtimeInvalidation(onInvalidate: () => void): void {
   useEffect(() => {
-    if (!WS_ORIGIN) return;
     const socket = io(WS_ORIGIN, { transports: ["websocket"], reconnection: true });
 
     socket.on("connect", onInvalidate);
