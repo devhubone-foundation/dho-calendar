@@ -352,7 +352,8 @@ Rules:
 Both public and authenticated interfaces support Bulgarian and English.
 
 - Public URL accepts `lang=bg|en`.
-- Public URL accepts `view=month|week|day|list`.
+- Public URL accepts `view=attendance|events` (PRODUCT_BLUEPRINT.md §15.1; v1.1 — previously `month|week|day|list`, now selects between the two public views only). Default `attendance`.
+- The authenticated calendar's internal Month/Week/Day/Upcoming view state (§15.2) is separate client state, not this query parameter.
 - Invalid values fall back to documented defaults.
 - State is per visit and is not persisted in cookies or browser storage.
 - Event title/description and member qualification are stored in Bulgarian and English.
@@ -368,7 +369,7 @@ Example:
 ```html
 <iframe
   id="dho-calendar"
-  src="https://calendar.devhubone.com/?lang=bg&view=month"
+  src="https://calendar.devhubone.com/?lang=bg&view=attendance"
   width="100%"
   scrolling="no"
 ></iframe>
