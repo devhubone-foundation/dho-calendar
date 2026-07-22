@@ -716,6 +716,17 @@
   border-radius: var(--dho-radius-pill);
   background: var(--dho-status-open-bg);
 }
+.dho-attn-member-row {
+  cursor: pointer;
+  border-radius: var(--dho-radius-sm);
+}
+.dho-attn-member-row:hover {
+  background: var(--dho-color-paper);
+}
+.dho-attn-member-row:focus-visible {
+  outline: 2px solid var(--dho-status-today-ring);
+  outline-offset: 2px;
+}
 .dho-attn-member-identity {
   display: flex;
   align-items: center;
