@@ -968,6 +968,11 @@
   color: var(--dho-color-navy);
   font-size: 0.9rem;
 }
+.dho-attday-opens-hub {
+  margin: 0;
+  color: var(--dho-status-attending-text);
+  font-size: 0.9rem;
+}
 .dho-attday-officehours {
   margin: 0;
   color: var(--dho-color-navy);

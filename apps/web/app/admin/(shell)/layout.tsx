@@ -2,7 +2,7 @@
 
 import { Avatar, Badge, Button, cn } from "@dho/ui";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { resolveUploadUrl } from "../../../lib/auth/api-client";
@@ -15,8 +15,14 @@ export default function AdminShellLayout({ children }: { children: ReactNode }) 
   const { user, profile, status, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dictionary = useDictionary();
   const [navOpen, setNavOpen] = useState(false);
+
+  // Preserve `?lang=` (ARCHITECTURE.md §14 non-persistent locale) across
+  // navbar navigation — nav hrefs are otherwise static paths with no query.
+  const lang = searchParams.get("lang");
+  const navHref = (href: string): string => (lang ? `${href}?lang=${lang}` : href);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -54,7 +60,7 @@ export default function AdminShellLayout({ children }: { children: ReactNode }) 
           {visibleItems.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={navHref(item.href)}
               aria-current={pathname === item.href ? "page" : undefined}
             >
               {item.label(dictionary)}

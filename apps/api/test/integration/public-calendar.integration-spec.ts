@@ -164,6 +164,17 @@ describe("Public calendar (integration)", () => {
       .send({ isOpen: false, startTime: null, endTime: null })
       .expect(200);
 
+    // The admin would otherwise inherit ATTENDING on this Wednesday from the
+    // open weekly default (PRODUCT_BLUEPRINT.md §12.4); mark it explicitly
+    // NOT_ATTENDING so this test isolates "closed date hides no event" from
+    // the confirmed-attendance override covered by the dedicated §12.8/§13
+    // tests below.
+    await request(app.getHttpServer())
+      .put(`/api/attendance/members/${admin.id}/exceptions/${wednesday}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "NOT_ATTENDING", slots: [] })
+      .expect(200);
+
     await request(app.getHttpServer())
       .post("/api/events")
       .set("Authorization", `Bearer ${adminToken}`)
@@ -190,6 +201,65 @@ describe("Public calendar (integration)", () => {
     expect(response.body.events).toEqual(
       expect.arrayContaining([expect.objectContaining({ titleEn: "Closed-day event" })]),
     );
+  });
+
+  it("opens a closed date when a member confirms Attending, using their entered interval as office hours (PRODUCT_BLUEPRINT.md §12.8/§13)", async () => {
+    const admin = await createTestUser(prisma, { role: "ADMIN" });
+    const adminToken = await login(app, admin.email, admin.password);
+    const today = todayInTimezone(OFFICE_TIMEZONE);
+    const wednesday = nextWeekdayOnOrAfter(today, 3);
+
+    await request(app.getHttpServer())
+      .put(`/api/office-schedule/exceptions/${wednesday}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ isOpen: false, startTime: null, endTime: null })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .put(`/api/attendance/members/${admin.id}/exceptions/${wednesday}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "ATTENDING", slots: [{ startTime: "09:00", endTime: "13:00" }] })
+      .expect(200);
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/public/calendar?from=${wednesday}&to=${wednesday}`)
+      .expect(200);
+
+    const day = response.body.days.find((d: { date: string }) => d.date === wednesday);
+    expect(day).toMatchObject({
+      isPublicOpenDay: true,
+      office: { isOpen: true, startTime: "09:00", endTime: "13:00" },
+    });
+    expect(day.confirmedAttendees).toEqual([
+      expect.objectContaining({ contactEmail: admin.email, slots: [{ startTime: "09:00", endTime: "13:00" }] }),
+    ]);
+  });
+
+  it("does not open a closed date when a member only confirms Not sure", async () => {
+    const admin = await createTestUser(prisma, { role: "ADMIN" });
+    const adminToken = await login(app, admin.email, admin.password);
+    const today = todayInTimezone(OFFICE_TIMEZONE);
+    const wednesday = nextWeekdayOnOrAfter(today, 3);
+
+    await request(app.getHttpServer())
+      .put(`/api/office-schedule/exceptions/${wednesday}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ isOpen: false, startTime: null, endTime: null })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .put(`/api/attendance/members/${admin.id}/exceptions/${wednesday}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "NOT_SURE", slots: [{ startTime: "09:00", endTime: "13:00" }] })
+      .expect(200);
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/public/calendar?from=${wednesday}&to=${wednesday}`)
+      .expect(200);
+
+    const day = response.body.days.find((d: { date: string }) => d.date === wednesday);
+    expect(day).toMatchObject({ isPublicOpenDay: false, office: { isOpen: false } });
+    expect(day.confirmedAttendees).toEqual([]);
   });
 
   it("clamps a partially out-of-hours attendee and omits one with zero overlap", async () => {

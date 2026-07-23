@@ -34,7 +34,12 @@ export class PublicCalendarService {
    * §13 public open-day rule from the already-clamped attendee view — a day
    * is only "open" publicly when it has at least one visibly confirmed
    * attendee, so `isPublicOpenDay` can never be true with an empty
-   * `confirmedAttendees` list.
+   * `confirmedAttendees` list. Per §12.8, confirmed attendance on a date the
+   * base schedule marks closed overrides that closure: `clampToOfficeHours`
+   * already lets such a member's entered slots through unclamped as
+   * `publicSlots`, so `confirmedAttendees.length > 0` alone determines
+   * openness; the displayed office hours for a day opened this way are the
+   * min-start/max-end span across those attendees' slots.
    */
   async getCalendar(from: string, to: string): Promise<PublicCalendarResponse> {
     const today = todayInTimezone(this.env.OFFICE_TIMEZONE);
@@ -68,16 +73,26 @@ export class PublicCalendarService {
       const dayMembers = memberDaysByDate.get(office.date) ?? [];
       const confirmedAttendees = buildAttendeeList(dayMembers, "ATTENDING", profileByUserId);
       const uncertainAttendees = buildAttendeeList(dayMembers, "NOT_SURE", profileByUserId);
+      const isPublicOpenDay = confirmedAttendees.length > 0;
+      const openedByAttendance = !office.isOpen && isPublicOpenDay;
+      const attendanceSpan = openedByAttendance ? spanOfAttendeeSlots(confirmedAttendees) : null;
 
       return {
         date: office.date,
-        office: {
-          isOpen: office.isOpen,
-          startTime: office.startTime,
-          endTime: office.endTime,
-          isChanged: office.source === "EXCEPTION",
-        },
-        isPublicOpenDay: office.isOpen && confirmedAttendees.length > 0,
+        office: openedByAttendance
+          ? {
+              isOpen: true,
+              startTime: attendanceSpan?.startTime ?? null,
+              endTime: attendanceSpan?.endTime ?? null,
+              isChanged: office.source === "EXCEPTION",
+            }
+          : {
+              isOpen: office.isOpen,
+              startTime: office.startTime,
+              endTime: office.endTime,
+              isChanged: office.source === "EXCEPTION",
+            },
+        isPublicOpenDay,
         confirmedAttendees,
         uncertainAttendees,
       };
@@ -98,6 +113,21 @@ function groupByDate(rows: ActiveMemberAttendanceDay[]): Map<string, ActiveMembe
     }
   }
   return map;
+}
+
+/** Min-start/max-end span of a closed date's confirmed attendees' slots —
+ * the office hours shown for a day opened by attendance rather than by the
+ * admin schedule (PRODUCT_BLUEPRINT.md §12.8/§13). */
+function spanOfAttendeeSlots(attendees: PublicMemberAttendance[]): { startTime: string; endTime: string } | null {
+  let start: string | null = null;
+  let end: string | null = null;
+  for (const attendee of attendees) {
+    for (const slot of attendee.slots) {
+      if (start === null || slot.startTime < start) start = slot.startTime;
+      if (end === null || slot.endTime > end) end = slot.endTime;
+    }
+  }
+  return start !== null && end !== null ? { startTime: start, endTime: end } : null;
 }
 
 /** Only members with at least one clamped public slot are listed — a member

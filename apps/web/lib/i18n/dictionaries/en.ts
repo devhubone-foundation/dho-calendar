@@ -154,6 +154,8 @@ const en = {
     },
     dayStatusOfficeClosed: "The office is closed",
     officeClosedNotice: "This won't count as office attendance — the office is closed on this date.",
+    attendanceOpensClosedDayNotice:
+      "The office is closed on this date, but your confirmed attendance will open the Hub for this date.",
     officeHoursLabel: "Office hours: {start}–{end}",
     editThisDay: "Edit this day",
     editDayTitle: "Edit {date}",

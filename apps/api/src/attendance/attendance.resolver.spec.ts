@@ -224,9 +224,9 @@ describe("clampToOfficeHours", () => {
     expect(result).toMatchObject({ publicSlots: [], isClamped: true });
   });
 
-  it("reports no public slots when the office is closed, without touching entered slots", () => {
+  it("reports no public slots for NOT_SURE when the office is closed, without touching entered slots", () => {
     const result = clampToOfficeHours(
-      { status: "ATTENDING", enteredSlots: [{ startTime: "12:00", endTime: "20:00" }], isCustomized: false },
+      { status: "NOT_SURE", enteredSlots: [{ startTime: "12:00", endTime: "20:00" }], isCustomized: false },
       closedOffice,
     );
     expect(result).toMatchObject({
@@ -235,6 +235,24 @@ describe("clampToOfficeHours", () => {
       isClamped: false,
       enteredSlots: [{ startTime: "12:00", endTime: "20:00" }],
     });
+  });
+
+  it("passes entered slots through unclamped for ATTENDING when the office is closed (PRODUCT_BLUEPRINT.md §12.8/§13 override)", () => {
+    const result = clampToOfficeHours(
+      { status: "ATTENDING", enteredSlots: [{ startTime: "09:00", endTime: "13:00" }], isCustomized: false },
+      closedOffice,
+    );
+    expect(result).toMatchObject({
+      officeIsOpen: false,
+      publicSlots: [{ startTime: "09:00", endTime: "13:00" }],
+      isClamped: false,
+      enteredSlots: [{ startTime: "09:00", endTime: "13:00" }],
+    });
+  });
+
+  it("reports no public slots for NOT_ATTENDING when the office is closed", () => {
+    const result = clampToOfficeHours({ status: "NOT_ATTENDING", enteredSlots: [], isCustomized: false }, closedOffice);
+    expect(result).toMatchObject({ publicSlots: [], isClamped: false });
   });
 
   it("reports no public slots for NOT_ATTENDING", () => {

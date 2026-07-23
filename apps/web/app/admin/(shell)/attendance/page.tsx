@@ -145,14 +145,20 @@ export default function AttendancePage() {
   }
 
   const officeIsOpen = officeDay?.isOpen ?? false;
-  const statusHeadline = !officeIsOpen
+  // PRODUCT_BLUEPRINT.md §12.8/§13: confirmed attendance on an otherwise-closed
+  // date opens the Hub for that date, so the office view treats it as open too.
+  const opensClosedDay =
+    !officeIsOpen && effective !== null && effective.status === "ATTENDING" && effective.publicSlots.length > 0;
+  const isEffectivelyOpen = officeIsOpen || opensClosedDay;
+  const statusHeadline = !isEffectivelyOpen
     ? dictionary.attendancePage.dayStatusOfficeClosed
     : effective
       ? dictionary.attendancePage.dayStatus[effective.status]
       : "";
-  const showConflictNote = !officeIsOpen && effective !== null && effective.status !== "NOT_ATTENDING";
+  const showConflictNote = !officeIsOpen && !opensClosedDay && effective !== null && effective.status !== "NOT_ATTENDING";
+  const showOpensHubNote = opensClosedDay;
   const showSlots =
-    officeIsOpen && effective !== null && effective.status !== "NOT_ATTENDING" && effective.enteredSlots.length > 0;
+    isEffectivelyOpen && effective !== null && effective.status !== "NOT_ATTENDING" && effective.enteredSlots.length > 0;
   const dateLabel = `${formatFullWeekday(selectedDate, locale)}, ${formatEventDate(selectedDate, locale)}`;
 
   return (
@@ -225,6 +231,10 @@ export default function AttendancePage() {
 
             {showConflictNote ? (
               <p className="dho-attday-conflict">{dictionary.attendancePage.officeClosedNotice}</p>
+            ) : null}
+
+            {showOpensHubNote ? (
+              <p className="dho-attday-opens-hub">{dictionary.attendancePage.attendanceOpensClosedDayNotice}</p>
             ) : null}
 
             {officeIsOpen && officeDay.startTime && officeDay.endTime ? (

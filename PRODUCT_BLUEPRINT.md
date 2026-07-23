@@ -3,12 +3,13 @@
 ## Document status
 
 - **Document:** Product Blueprint
-- **Version:** 1.2
+- **Version:** 1.3
 - **Status:** Approved product source of truth
 - **Product:** DevHubOne Office Calendar
 - **Primary audience:** Product owner, developers, Claude Code planning agents, implementation agents, reviewers, and testers
 - **Repository role:** This file is the authoritative product-level source of truth for the project
 - **Change history:**
+  - v1.3 (2026-07-22) — Reverses the closed-day attendance rule per §12.8/§13: confirmed (`Attending`) attendance on a date the base office schedule marks closed now opens the Hub publicly for that date, with hours derived from confirmed attendees' entered intervals; `Not sure` still never opens a closed date. Approved by the product owner alongside Issue #20.
   - v1.2 (2026-07-22) — Version 1 scope change per §33: the Attendance view (§15.1.1) remains non-interactive at the day level, but each individual attendee's stripe/row is now a tap/click/keyboard-operable control that opens a per-attendee details modal (§16). Addresses attendance-hour labels being clipped at narrow mobile widths. Approved by the product owner alongside Issue #17/#18.
   - v1.1 (2026-07-22) — Version 1 scope change per §33: the public calendar's view model is replaced by exactly two query-param-selected views (Attendance, Events); see §15.1. The authenticated calendar's four-view model (§15.2) is unchanged. Approved by the product owner alongside Issue #12.
 
@@ -594,31 +595,30 @@ No implementation issue may invent this behavior without documenting the decisio
 
 ## 12.8 Attendance and closed days
 
-Members may still have a recurring personal schedule or saved exception on a date when the office is closed.
+Members may still have a recurring personal schedule or saved exception on a date when the base office schedule is closed.
 
-However:
-
-- the public calendar must not represent the office as open;
-- the member must not count toward an open-office day;
-- the authenticated UI should make the conflict visible.
+- Confirmed (`Attending`) attendance on such a date makes that date effectively open for public display: the member counts toward an open-office day, and the public calendar shows the Hub as open, with public office hours derived from confirmed attendees' entered intervals (§13).
+- `Not sure` attendance never overrides a closed date — it still does not count toward opening it.
+- The authenticated UI must confirm this to the member (that their confirmed attendance opens the Hub for a date the base schedule marks closed) rather than warn that the attendance won't count.
 
 ---
 
 ## 13. Public open-day rule
 
-A date appears publicly as a normal open office day only when both conditions are true:
+A date appears publicly as an open office day when either condition is true:
 
-1. the effective office schedule marks the office as open; and
-2. at least one active member has `Attending` status for that date.
+1. the effective office schedule marks the office as open **and** at least one active member has `Attending` status for that date; or
+2. the effective office schedule marks the office as closed **and** at least one active member has `Attending` status for that date (§12.8 override) — public office hours for such a date are the confirmed attendees' entered interval(s) (the min-start/max-end span across all confirmed attendees for that date, when there is more than one).
 
-A member with `Not sure` status does not satisfy the confirmed-attendee requirement.
+A member with `Not sure` status does not satisfy the confirmed-attendee requirement in either case, and never opens a closed date.
 
 Therefore:
 
 - open office + confirmed attendee → show as an open office day;
 - open office + only uncertain attendees → do not show as a normal open office day;
 - open office + no attendees → do not show as a normal open office day;
-- closed office + attendees → do not show as an open office day;
+- closed office + confirmed attendee → confirmed attendance overrides the closure; show as an open office day with hours derived from the confirmed attendees;
+- closed office + only uncertain attendees → do not show as an open office day;
 - an event on such a date may still appear publicly according to the event rules.
 
 This distinction is essential: hiding an office working day from the public open-office presentation must not automatically hide a public event occurring on that date.
